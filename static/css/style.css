@@ -1,0 +1,30 @@
+body {
+  padding-top: 60px;
+  padding-bottom: 40px;
+}
+
+.oneline {
+  display: block;
+  height: 1em;
+  padding: 4px;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.treasures dl {
+  margin-bottom:0;
+}
+
+.treasures dt {
+  width: 80px;
+}
+
+.treasures dd {
+  margin-left: 90px;
+}
+
+.gold {
+  background: #ffeb9d;
+}

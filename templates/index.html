@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+  <div class="container">
+  {% if treasures %}
+    <ul class="nav nav-pills">
+      <li class="active"><a rel="sort-value" href="#" data-reverse="true">Value</a></li>
+      <li><a rel="sort-views" href="#" data-reverse="true">Views</a></li>
+      <li><a rel="sort-treasuries" href="#">Users</a></li>
+    </ul>
+    <ul class="treasures thumbnails">
+    {% for treasure in treasures %}
+    <li class="span2 thumbnail {% if 'gold' in treasure['materials'] or 'gold' in treasure['title']|lower %}gold{% endif %}" data-value="{{ loop.index }}" data-views="{{ treasure['views'] }}" data-treasuries="{{ treasure['users']|length }}">
+        <a href="{{ treasure['url'] }}" title="{{ treasure['title'] }}" onclick="window.open(this.href); return false;">
+          <img src="{{ treasure['Images'][0]['url_170x135'] }}" alt="{{ treasure['title'] }}" />
+          <p class="oneline"><strong>{{ treasure['title'] }}</strong></p>
+        </a>
+        <p class="oneline"><a href="{{ treasure['Shop']['url'] }}" title="{{ treasure['Shop']['shop_name'] }}" onclick="window.open(this.href); return false;">{{ treasure['Shop']['shop_name'] }}</a></p>
+        <p class="oneline">{{ treasure['price'] }} {{ treasure['currency_code'] }}</p>
+        <p class="oneline">
+          <span class="" title="Views"><i class="icon-eye-open"></i> {{ treasure['views'] }}</span>
+          <span class="pull-right" title="Users"><i class="icon-user"></i> {{ treasure['users']|length }}</span>
+        </p>
+      </li>
+    {% endfor %}
+    </ul>
+  {% else %}
+    <p class="alert alert-info">No treasures found.</p>
+  {% endif %}
+  </div>
+{% endblock %}
