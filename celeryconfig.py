@@ -5,7 +5,7 @@ BROKER_URL = 'redis://localhost:6379/0'
 CELERYBEAT_SCHEDULE = {
     'runs-every-5-minutes': {
         'task': 'tasks.fetch_treasuries',
-        'schedule': timedelta(minutes=5),
+        'schedule': timedelta(seconds=5),
     }
 }
 
