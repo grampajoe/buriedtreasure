@@ -1,7 +1,7 @@
 from datetime import timedelta
 import os
 
-BROKER_URL = os.environ.get('REDISCLOUD_URL') + '/0'
+BROKER_URL = os.environ.get('RABBITMQ_BIGWIG_URL')
 
 CELERYBEAT_SCHEDULE = {
     'runs-every-5-minutes': {

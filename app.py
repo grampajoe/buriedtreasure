@@ -36,7 +36,7 @@ def get_redis(db=0):
         password=app.config['REDIS_CONFIG'].password,
     )
 
-r = get_redis(db=1)
+r = get_redis(db=0)
 
 @app.route('/')
 def index():
