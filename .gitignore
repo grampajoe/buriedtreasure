@@ -1,6 +1,6 @@
 # App Specific
 secrets.py
-celerybeat-schedule
+celerybeat-schedule.db
 *.rdb
 
 *.py[cod]

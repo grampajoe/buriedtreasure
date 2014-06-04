@@ -1,7 +1,6 @@
 from celery import Celery
-import urllib2
-import urllib
 import json
+import requests
 import settings
 import secrets
 import redis
@@ -16,10 +15,10 @@ r = redis.Redis(host='localhost', port=6379, db=1)
 
 def api_call(endpoint, **params):
     params['api_key'] = secrets.CONSUMER_KEY
-    url = settings.API_SERVER + endpoint + '?' +urllib.urlencode(params)
-    response = urllib2.urlopen(url)
+    url = settings.API_SERVER + endpoint
+    response = requests.get(url, params=params)
 
-    return json.loads(response.read())
+    return response.json()
 
 @celery.task
 def fetch_treasuries():
