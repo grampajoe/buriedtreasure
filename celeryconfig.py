@@ -1,6 +1,7 @@
 from datetime import timedelta
+import os
 
-BROKER_URL = 'redis://localhost:6379/0'
+BROKER_URL = os.environ.get('REDISCLOUD_URL') + '/0'
 
 CELERYBEAT_SCHEDULE = {
     'runs-every-5-minutes': {

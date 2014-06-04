@@ -12,9 +12,6 @@ app = Flask(__name__)
 app.secret_key = "\x9bT\xc2\xea\x03\xc2\x9b]\xa2\xeb\xcb\xe5\xce[\x19^\xaf3\xbf\xbb\xc4s\xb4'"
 
 app.config.from_object('settings')
-app.config.from_object('secrets')
-
-r = redis.Redis(db=1)
 
 oauth = OAuth()
 
@@ -23,13 +20,23 @@ etsy = oauth.remote_app('etsy',
     request_token_url=app.config['API_SERVER']+'oauth/request_token',
     access_token_url=app.config['API_SERVER']+'oauth/access_token',
     authorize_url=app.config['ETSY_SERVER']+'oauth/signin',
-    consumer_key=app.config['CONSUMER_KEY'],
-    consumer_secret=app.config['CONSUMER_SECRET'],
+    consumer_key=app.config['ETSY_API_KEY'],
+    consumer_secret=app.config['ETSY_API_SECRET'],
     request_token_params = {
         'scope': 'profile_r',
-        'oauth_consumer_key': app.config['CONSUMER_KEY'],
+        'oauth_consumer_key': app.config['ETSY_API_KEY'],
     },
 )
+
+def get_redis(db=0):
+    """Get a Redis connection."""
+    return redis.Redis(
+        host=app.config['REDIS_CONFIG'].hostname,
+        port=app.config['REDIS_CONFIG'].port,
+        password=app.config['REDIS_CONFIG'].password,
+    )
+
+r = get_redis(db=1)
 
 @app.route('/')
 def index():

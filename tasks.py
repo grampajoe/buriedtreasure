@@ -1,21 +1,21 @@
 from celery import Celery
 import json
 import requests
-import settings
-import secrets
 import redis
+
+from app import app, get_redis
 
 celery = Celery('tasks')
 
 celery.config_from_object('celeryconfig')
 
 
-r = redis.Redis(host='localhost', port=6379, db=1)
+r = get_redis(db=1)
 
 
 def api_call(endpoint, **params):
-    params['api_key'] = secrets.CONSUMER_KEY
-    url = settings.API_SERVER + endpoint
+    params['api_key'] = app.config['ETSY_API_KEY']
+    url = app.config['API_SERVER'] + endpoint
     response = requests.get(url, params=params)
 
     return response.json()
