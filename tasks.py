@@ -3,14 +3,11 @@ import json
 import requests
 import redis
 
-from app import app, get_redis
+from app import app, r
 
 celery = Celery('tasks')
 
 celery.config_from_object('celeryconfig')
-
-
-r = get_redis(db=1)
 
 
 def api_call(endpoint, **params):
