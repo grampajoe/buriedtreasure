@@ -103,7 +103,7 @@ def score_listing(listing_id):
 def process_listings():
     """Process all listings."""
     chunk_size = 10
-    listing_ids = r.zrevrange('treasures', 0, 999)
+    listing_ids = r.zrevrange('treasures', 0, 499)
 
     for i in xrange(0, len(listing_ids), chunk_size):
         fetch_detail.delay(
@@ -111,4 +111,4 @@ def process_listings():
         )
 
     # Purge the unworthy
-    r.zremrangebyrank('treasures', 0, -1001)
+    r.zremrangebyrank('treasures', 0, -501)

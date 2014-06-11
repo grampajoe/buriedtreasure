@@ -284,10 +284,10 @@ class TestProcessListings(object):
 
         process_listings()
 
-        assert fetch_detail.delay.call_count == 100
+        assert fetch_detail.delay.call_count == 50
         fetch_detail.delay.assert_any_call(
             '1999', '1998', '1997', '1996', '1995',
             '1994', '1993', '1992', '1991', '1990',
         )
 
-        assert r.zcard('treasures') == 1000
+        assert r.zcard('treasures') == 500
