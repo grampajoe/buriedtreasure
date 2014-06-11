@@ -101,7 +101,7 @@ def score_listing(listing_id):
 @celery.task
 def process_listings():
     """Process all listings."""
-    chunk_size = 10
+    chunk_size = 20
     listing_ids = r.zrevrange('treasures', 0, 499)
 
     for i in xrange(0, len(listing_ids), chunk_size):
