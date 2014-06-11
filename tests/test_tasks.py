@@ -159,6 +159,7 @@ class TestFetchDetail(object):
         self.get_listing_data = self.get_listing_data_patch.start()
 
         self.get_listing_data.return_value = self.listing = {
+            'state': 'active',
             'materials': ['poop', 'butt']
         }
 
@@ -171,11 +172,23 @@ class TestFetchDetail(object):
         """Should get and store listing data."""
         listing_id = '123'
 
-        fetch_detail(listing_id)
+        result = fetch_detail(listing_id)
 
         data = json.loads(r.get('listings.%s.data' % listing_id))
 
+        assert result == True
         assert data == self.listing
+
+    def test_dont_store_inactive(self):
+        """Should not store data for inactive listings."""
+        self.get_listing_data.return_value = {
+            'state': 'butt',
+        }
+
+        result = fetch_detail('123')
+
+        assert result == False
+        assert r.get('listings.%s.data' % '123') is None
 
 
 def assert_almost_equal(actual, expected, error=0.01):
@@ -225,13 +238,25 @@ class TestScoreListing(object):
             'materials': ['gold'],
         }))
 
-        score_listing(1)
-        score_listing(2)
-        score_listing(3)
+        score_listing(True, 1)
+        score_listing(True, 2)
+        score_listing(True, 3)
 
         assert_almost_equal(r.zscore('treasures', '1'), 0.004443950672147539)
         assert_almost_equal(r.zscore('treasures', '2'), 4.395604395604396)
         assert_almost_equal(r.zscore('treasures', '3'), 9.900990099009901)
+
+    def test_dont_score_inactive(self):
+        """Should not score inactive listings."""
+        r.zadd('treasures', '9000', 0)
+        r.sadd('listings.9000.users', 1, 2, 3)
+        r.set('listings.9000.data', '{"fart": true}')
+
+        score_listing(False, 9000)
+
+        assert r.zscore('treasures', '9000') is None
+        assert r.scard('listings.9000.users') == 0
+        assert r.get('listings.9000.data') is None
 
 
 class TestProcessListings(object):
@@ -253,8 +278,8 @@ class TestProcessListings(object):
 
         assert fetch_detail.apply_async.call_count == 1000
         fetch_detail.apply_async.assert_called_with(
-            ['999'], link=score_listing.s.return_value,
+            ['1000'], link=score_listing.s.return_value,
         )
-        score_listing.s.assert_called_with('999')
+        score_listing.s.assert_called_with('1000')
 
         assert r.zcard('treasures') == 1000

@@ -14,7 +14,13 @@ def api_call(endpoint, **params):
     url = app.config['API_SERVER'] + endpoint
     response = requests.get(url, params=params)
 
-    return response.json()
+    try:
+        return response.json()
+    except ValueError:
+        app.logger.error('API request failed: %s %s' % (
+            response.status_code, response.text,
+        ))
+        raise
 
 
 def get_treasuries():
@@ -62,36 +68,44 @@ def fetch_detail(listing_id):
     """Fetches and stores detailed listing data."""
     data = get_listing_data(listing_id)
 
-    r.set('listings.%s.data' % listing_id, json.dumps(data))
+    if data.get('state', '') == 'active':
+        r.set('listings.%s.data' % listing_id, json.dumps(data))
+        return True
+    else:
+        return False
 
 
 @celery.task
-def score_listing(listing_id):
+def score_listing(active, listing_id):
     """Calculate and save a listing's score."""
-    listing = json.loads(r.get('listings.%s.data' % listing_id))
-    users = r.scard('listings.%s.users' % listing_id)
+    if not active:
+        r.zrem('treasures', listing_id)
+        r.delete('listings.%s.users' % listing_id)
+        r.delete('listings.%s.data' % listing_id)
+    else:
+        listing = json.loads(r.get('listings.%s.data' % listing_id))
+        users = r.scard('listings.%s.users' % listing_id)
 
-    score = (
-        users * 10
-    ) / (
-        float(listing['views']) * float(listing['quantity']) + 1
-    )
+        score = (
+            users * 10
+        ) / (
+            float(listing['views']) * float(listing['quantity']) + 1
+        )
 
-    if 'gold' in listing['materials']:
-        score = score * 100
+        if 'gold' in listing['materials']:
+            score = score * 100
 
-    r.zadd('treasures', listing_id, score)
+        r.zadd('treasures', listing_id, score)
 
 
 @celery.task
 def process_listings():
     """Process all listings."""
-    for listing_id in r.zrange('treasures', 0, 999):
+    for listing_id in r.zrevrange('treasures', 0, 999):
         fetch_detail.apply_async(
             [listing_id],
             link=score_listing.s(listing_id),
         )
 
     # Purge the unworthy
-    count = r.zcard('treasures')
-    r.zremrangebyrank('treasures', 1000, count)
+    r.zremrangebyrank('treasures', 0, -1001)

@@ -1,3 +1,3 @@
 web: python app.py
-worker: celery worker --app=tasks:celery -B -l debug
+worker: celery worker --app=tasks:celery -B -l debug --purge
 redis: redis-server
