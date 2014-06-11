@@ -196,7 +196,7 @@ class TestFetchDetail(object):
             data = json.loads(r.get('listings.%s.data' % listing_id))
 
             assert data == listing
-            score_listing.delay.assert_any_call(listing_id)
+            score_listing.assert_any_call(listing_id)
 
     @patch('tasks.score_listing')
     def test_dont_store_inactive(self, score_listing):
@@ -208,7 +208,7 @@ class TestFetchDetail(object):
         result = fetch_detail('123')
 
         assert r.get('listings.%s.data' % '123') is None
-        assert score_listing.delay.called == False
+        assert score_listing.called == False
 
 
 def assert_almost_equal(actual, expected, error=0.01):

@@ -78,10 +78,9 @@ def fetch_detail(*listing_ids):
                 json.dumps(listing),
             )
 
-            score_listing.delay(listing['listing_id'])
+            score_listing(listing['listing_id'])
 
 
-@celery.task
 def score_listing(listing_id):
     """Calculate and save a listing's score."""
     listing = json.loads(r.get('listings.%s.data' % listing_id))
