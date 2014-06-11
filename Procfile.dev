@@ -1,3 +1,5 @@
 web: python app.py
-worker: celery worker --app=tasks:celery -B -l debug --purge
+default_worker: celery worker --app=tasks:celery -l debug --purge -Q default
+fetch_detail_worker: celery worker --app=tasks:celery -l debug --purge -Q fetch_detail
+beat: celery beat --app=tasks:celery -l debug
 redis: redis-server

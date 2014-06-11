@@ -1,2 +1,4 @@
 web: newrelic-admin run-program gunicorn -w $WEB_WORKERS --worker-class eventlet -b 0.0.0.0:$PORT app:app
-worker: newrelic-admin run-program celery worker --app=tasks:celery -B --concurrency $CELERY_WORKERS
+default_worker: newrelic-admin run-program celery worker --app=tasks:celery --concurrency $CELERY_WORKERS -Q default -l info
+fetch_detail_worker: newrelic-admin run-program celery worker --app=tasks:celery --concurrency $CELERY_WORKERS -Q fetch_detail -l info
+beat: newrelic-admin run-program celery beat --app=tasks:celery
