@@ -202,13 +202,31 @@ class TestFetchDetail(object):
     def test_dont_store_inactive(self, score_listing):
         """Should not store data for inactive listings."""
         self.get_listing_data.return_value = [{
+            'listing_id': '123',
             'state': 'butt',
         }]
 
-        result = fetch_detail('123')
+        fetch_detail('123')
 
         assert r.get('listings.%s.data' % '123') is None
         assert score_listing.called == False
+
+    def test_destroy_inactive(self):
+        """Should delete everything about an inactive listing."""
+        self.get_listing_data.return_value = [{
+            'listing_id': '123',
+            'state': 'butt',
+        }]
+
+        r.set('listings.123.data', '{"hello": "there"}')
+        r.sadd('listings.123.users', '999')
+        r.zadd('treasures', '123', 9000)
+
+        fetch_detail('123')
+
+        assert not r.exists('listings.123.data')
+        assert not r.exists('listings.123.users')
+        assert r.zrank('treasures', '123') is None
 
 
 def assert_almost_equal(actual, expected, error=0.01):

@@ -79,6 +79,10 @@ def fetch_detail(*listing_ids):
             )
 
             score_listing(listing['listing_id'])
+        else:
+            r.delete('listings.%s.data' % listing['listing_id'])
+            r.delete('listings.%s.users' % listing['listing_id'])
+            r.zrem('treasures', listing['listing_id'])
 
 
 def score_listing(listing_id):
