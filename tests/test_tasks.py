@@ -1,5 +1,5 @@
 import json
-from mock import patch
+from mock import patch, call
 
 from app import r
 
@@ -134,20 +134,22 @@ class TestFetchListings(object):
 @patch('tasks.api_call')
 def test_get_listing_data(api_call):
     """Should get listing data given a listing ID."""
-    listing_id = '123'
-    listing = {
-        'materials': ['poop', 'butt'],
-    }
+    listing_ids = [1, 2, 3]
+    listings = [
+        {'listing_id': '1', 'materials': ['poop', 'butt']},
+        {'listing_id': '2', 'materials': ['poop', 'butt']},
+        {'listing_id': '3', 'materials': ['poop', 'butt']},
+    ]
 
     api_call.return_value = {
-        'results': [listing],
+        'results': listings,
     }
 
-    data = get_listing_data(listing_id)
+    data = get_listing_data(*listing_ids)
 
-    assert data == listing
+    assert data == listings
     api_call.assert_called_with(
-        'listings/%s' % listing_id,
+        'listings/%s' % ','.join(map(str, listing_ids)),
         includes='Shop,Images',
     )
 
@@ -158,37 +160,55 @@ class TestFetchDetail(object):
         self.get_listing_data_patch = patch('tasks.get_listing_data')
         self.get_listing_data = self.get_listing_data_patch.start()
 
-        self.get_listing_data.return_value = self.listing = {
-            'state': 'active',
-            'materials': ['poop', 'butt']
-        }
+        self.listings = [
+            {
+                'listing_id': '1',
+                'state': 'active',
+                'materials': ['poop', 'butt'],
+            },
+            {
+                'listing_id': '2',
+                'state': 'active',
+                'materials': ['poop', 'butt'],
+            },
+            {
+                'listing_id': '3',
+                'state': 'active',
+                'materials': ['poop', 'butt'],
+            },
+        ]
+
+        self.get_listing_data.return_value = self.listings
 
     def teardown_method(self, method):
         self.get_listing_data_patch.stop()
 
         r.flushdb()
 
-    def test_fetch_detail(self):
+    @patch('tasks.score_listing')
+    def test_fetch_detail(self, score_listing):
         """Should get and store listing data."""
-        listing_id = '123'
+        listing_ids = ['1', '2', '3']
 
-        result = fetch_detail(listing_id)
+        result = fetch_detail(*listing_ids)
 
-        data = json.loads(r.get('listings.%s.data' % listing_id))
+        for listing_id, listing in zip(listing_ids, self.listings):
+            data = json.loads(r.get('listings.%s.data' % listing_id))
 
-        assert result == True
-        assert data == self.listing
+            assert data == listing
+            score_listing.delay.assert_any_call(listing_id)
 
-    def test_dont_store_inactive(self):
+    @patch('tasks.score_listing')
+    def test_dont_store_inactive(self, score_listing):
         """Should not store data for inactive listings."""
-        self.get_listing_data.return_value = {
+        self.get_listing_data.return_value = [{
             'state': 'butt',
-        }
+        }]
 
         result = fetch_detail('123')
 
-        assert result == False
         assert r.get('listings.%s.data' % '123') is None
+        assert score_listing.delay.called == False
 
 
 def assert_almost_equal(actual, expected, error=0.01):
@@ -238,25 +258,13 @@ class TestScoreListing(object):
             'materials': ['gold'],
         }))
 
-        score_listing(True, 1)
-        score_listing(True, 2)
-        score_listing(True, 3)
+        score_listing(1)
+        score_listing(2)
+        score_listing(3)
 
         assert_almost_equal(r.zscore('treasures', '1'), 0.004443950672147539)
         assert_almost_equal(r.zscore('treasures', '2'), 4.395604395604396)
         assert_almost_equal(r.zscore('treasures', '3'), 9.900990099009901)
-
-    def test_dont_score_inactive(self):
-        """Should not score inactive listings."""
-        r.zadd('treasures', '9000', 0)
-        r.sadd('listings.9000.users', 1, 2, 3)
-        r.set('listings.9000.data', '{"fart": true}')
-
-        score_listing(False, 9000)
-
-        assert r.zscore('treasures', '9000') is None
-        assert r.scard('listings.9000.users') == 0
-        assert r.get('listings.9000.data') is None
 
 
 class TestProcessListings(object):
@@ -276,10 +284,10 @@ class TestProcessListings(object):
 
         process_listings()
 
-        assert fetch_detail.apply_async.call_count == 1000
-        fetch_detail.apply_async.assert_called_with(
-            ['1000'], link=score_listing.s.return_value,
+        assert fetch_detail.delay.call_count == 100
+        fetch_detail.delay.assert_any_call(
+            '1999', '1998', '1997', '1996', '1995',
+            '1994', '1993', '1992', '1991', '1990',
         )
-        score_listing.s.assert_called_with('1000')
 
         assert r.zcard('treasures') == 1000

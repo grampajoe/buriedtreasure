@@ -56,55 +56,58 @@ def fetch_listings():
         r.sadd('listings.%s.users' % listing_id, *users)
 
 
-def get_listing_data(listing_id):
+def get_listing_data(*listing_ids):
     """Returns data for a given listing ID."""
-    response = api_call('listings/%s' % listing_id, includes='Shop,Images')
+    response = api_call(
+        'listings/%s' % ','.join(map(str, listing_ids)),
+        includes='Shop,Images',
+    )
 
-    return response['results'].pop()
+    return response['results']
 
 
 @celery.task
-def fetch_detail(listing_id):
+def fetch_detail(*listing_ids):
     """Fetches and stores detailed listing data."""
-    data = get_listing_data(listing_id)
+    data = get_listing_data(*listing_ids)
 
-    if data.get('state', '') == 'active':
-        r.set('listings.%s.data' % listing_id, json.dumps(data))
-        return True
-    else:
-        return False
+    for listing in data:
+        if listing.get('state', '') == 'active':
+            r.set(
+                'listings.%s.data' % listing['listing_id'],
+                json.dumps(listing),
+            )
+
+            score_listing.delay(listing['listing_id'])
 
 
 @celery.task
-def score_listing(active, listing_id):
+def score_listing(listing_id):
     """Calculate and save a listing's score."""
-    if not active:
-        r.zrem('treasures', listing_id)
-        r.delete('listings.%s.users' % listing_id)
-        r.delete('listings.%s.data' % listing_id)
-    else:
-        listing = json.loads(r.get('listings.%s.data' % listing_id))
-        users = r.scard('listings.%s.users' % listing_id)
+    listing = json.loads(r.get('listings.%s.data' % listing_id))
+    users = r.scard('listings.%s.users' % listing_id)
 
-        score = (
-            users * 10
-        ) / (
-            float(listing['views']) * float(listing['quantity']) + 1
-        )
+    score = (
+        users * 10
+    ) / (
+        float(listing['views']) * float(listing['quantity']) + 1
+    )
 
-        if 'gold' in listing['materials']:
-            score = score * 100
+    if 'gold' in listing['materials']:
+        score = score * 100
 
-        r.zadd('treasures', listing_id, score)
+    r.zadd('treasures', listing_id, score)
 
 
 @celery.task
 def process_listings():
     """Process all listings."""
-    for listing_id in r.zrevrange('treasures', 0, 999):
-        fetch_detail.apply_async(
-            [listing_id],
-            link=score_listing.s(listing_id),
+    chunk_size = 10
+    listing_ids = r.zrevrange('treasures', 0, 999)
+
+    for i in xrange(0, len(listing_ids), chunk_size):
+        fetch_detail.delay(
+            *listing_ids[i: i + chunk_size]
         )
 
     # Purge the unworthy

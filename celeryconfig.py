@@ -16,6 +16,6 @@ CELERYBEAT_SCHEDULE = {
 
 CELERY_ANNOTATIONS = {
     'tasks.fetch_detail': {
-        'rate_limit': '4/m',
+        'rate_limit': '5/m',
     }
 }
