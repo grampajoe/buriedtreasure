@@ -28,7 +28,8 @@ etsy = oauth.remote_app('etsy',
     },
 )
 
-def get_redis(db=0):
+
+def get_redis():
     """Get a Redis connection."""
     return redis.Redis(
         host=app.config['REDIS_CONFIG'].hostname,
@@ -36,7 +37,9 @@ def get_redis(db=0):
         password=app.config['REDIS_CONFIG'].password,
     )
 
-r = get_redis(db=0)
+
+r = get_redis()
+
 
 @app.route('/')
 def index():
