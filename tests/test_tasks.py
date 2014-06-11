@@ -219,6 +219,8 @@ def store_fake_data(listing_id):
 class TestFetchDetailDestruction(object):
     """Tests for destroying bad data!!!"""
     def setup_method(self, method):
+        r.flushdb()
+
         self.get_listing_data_patch = patch('tasks.get_listing_data')
         self.get_listing_data = self.get_listing_data_patch.start()
 
@@ -241,6 +243,7 @@ class TestFetchDetailDestruction(object):
 
     def teardown_method(self, method):
         self.get_listing_data_patch.stop()
+        r.flushdb()
 
     @patch('tasks.score_listing')
     def test_dont_store_inactive(self, score_listing):
