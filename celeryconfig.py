@@ -25,11 +25,11 @@ CELERY_ROUTES = {
 CELERYBEAT_SCHEDULE = {
     'runs-every-5-minutes': {
         'task': 'tasks.fetch_listings',
-        'schedule': timedelta(seconds=5),
+        'schedule': timedelta(minutes=5),
     },
     'process-listings-every-5-minutes': {
         'task': 'tasks.process_listings',
-        'schedule': timedelta(seconds=5),
+        'schedule': timedelta(minutes=5),
     }
 }
 
