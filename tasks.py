@@ -72,13 +72,21 @@ def fetch_detail(*listing_ids):
     data = get_listing_data(*listing_ids)
 
     for listing in data:
-        if listing.get('state', '') == 'active':
+        if (
+            listing.get('state', '') == 'active' and
+            listing.get('quantity', 0) > 0 and
+            listing.get('views', 0) > 0
+        ):
             r.set(
                 'listings.%s.data' % listing['listing_id'],
                 json.dumps(listing),
             )
 
             score_listing(listing['listing_id'])
+        else:
+            r.delete('listings.%s.data' % listing['listing_id'])
+            r.delete('listings.%s.users' % listing['listing_id'])
+            r.zrem('treasures', listing['listing_id'])
 
 
 def score_listing(listing_id):

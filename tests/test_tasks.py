@@ -164,16 +164,22 @@ class TestFetchDetail(object):
             {
                 'listing_id': '1',
                 'state': 'active',
+                'quantity': 1,
+                'views': 1,
                 'materials': ['poop', 'butt'],
             },
             {
                 'listing_id': '2',
                 'state': 'active',
+                'quantity': 1,
+                'views': 1,
                 'materials': ['poop', 'butt'],
             },
             {
                 'listing_id': '3',
                 'state': 'active',
+                'quantity': 1,
+                'views': 1,
                 'materials': ['poop', 'butt'],
             },
         ]
@@ -198,17 +204,140 @@ class TestFetchDetail(object):
             assert data == listing
             score_listing.assert_any_call(listing_id)
 
+
+def assert_does_not_exist(listing_id):
+    """Asserts that listing data does not exist for listing_id."""
+    assert not r.exists('listings.%s.data' % listing_id)
+    assert not r.exists('listings.%s.users' % listing_id)
+    assert r.zrank('treasures', listing_id) is None
+
+
+def store_fake_data(listing_id):
+    """Stores fake listing data for listing_id."""
+    r.set('listings.%s.data' % listing_id, '{"hello": "there"}')
+    r.sadd('listings.%s.users' % listing_id, '999')
+    r.zadd('treasures', listing_id, 9000)
+
+
+class TestFetchDetailDestruction(object):
+    """Tests for destroying bad data!!!"""
+    def setup_method(self, method):
+        r.flushdb()
+
+        self.get_listing_data_patch = patch('tasks.get_listing_data')
+        self.get_listing_data = self.get_listing_data_patch.start()
+
+    def teardown_method(self, method):
+        self.get_listing_data_patch.stop()
+        r.flushdb()
+
     @patch('tasks.score_listing')
     def test_dont_store_inactive(self, score_listing):
         """Should not store data for inactive listings."""
-        self.get_listing_data.return_value = [{
-            'state': 'butt',
-        }]
+        self.get_listing_data.return_value = [
+            {
+                'listing_id': '1',
+                'materials': ['fart'],
+                'state': 'butt',
+                'quantity': 1,
+                'views': 1,
+            },
+        ]
 
-        result = fetch_detail('123')
+        fetch_detail('1')
 
-        assert r.get('listings.%s.data' % '123') is None
+        assert_does_not_exist('1')
         assert score_listing.called == False
+
+    @patch('tasks.score_listing')
+    def test_dont_store_empty(self, score_listing):
+        """Should not store data for empty listings."""
+        self.get_listing_data.return_value = [
+            {
+                'listing_id': '2',
+                'materials': ['fart'],
+                'state': 'active',
+                'quantity': 0,
+                'views': 1,
+            },
+        ]
+
+        fetch_detail('2')
+
+        assert_does_not_exist('2')
+        assert score_listing.called == False
+
+    @patch('tasks.score_listing')
+    def test_dont_store_unviewed(self, score_listing):
+        """Should not store data for unviewed listings."""
+        self.get_listing_data.return_value = [
+            {
+                'listing_id': '3',
+                'materials': ['fart'],
+                'state': 'active',
+                'quantity': 1,
+                'views': 0,
+            },
+        ]
+
+        fetch_detail('3')
+
+        assert_does_not_exist('3')
+        assert score_listing.called == False
+
+    def test_destroy_inactive(self):
+        """Should delete everything about an inactive listing."""
+        self.get_listing_data.return_value = [
+            {
+                'listing_id': '1',
+                'materials': ['fart'],
+                'state': 'butt',
+                'quantity': 1,
+                'views': 1,
+            },
+        ]
+
+        store_fake_data('1')
+
+        fetch_detail('1')
+
+        assert_does_not_exist('1')
+
+    def test_destroy_empty(self):
+        """Should delete everything about an empty listing."""
+        self.get_listing_data.return_value = [
+            {
+                'listing_id': '2',
+                'materials': ['fart'],
+                'state': 'active',
+                'quantity': 0,
+                'views': 1,
+            },
+        ]
+
+        store_fake_data('2')
+
+        fetch_detail('2')
+
+        assert_does_not_exist('2')
+
+    def test_destroy_unviewed(self):
+        """Should delete everything about an unviewed listing."""
+        self.get_listing_data.return_value = [
+            {
+                'listing_id': '3',
+                'materials': ['fart'],
+                'state': 'active',
+                'quantity': 1,
+                'views': 0,
+            },
+        ]
+
+        store_fake_data('3')
+
+        fetch_detail('3')
+
+        assert_does_not_exist('3')
 
 
 def assert_almost_equal(actual, expected, error=0.01):
