@@ -74,7 +74,8 @@ def fetch_detail(*listing_ids):
     for listing in data:
         if (
             listing.get('state', '') == 'active' and
-            listing.get('quantity', 0) > 0
+            listing.get('quantity', 0) > 0 and
+            listing.get('views', 0) > 0
         ):
             r.set(
                 'listings.%s.data' % listing['listing_id'],
