@@ -1,10 +1,18 @@
 language: python
-python: "2.7"
+python: '2.7'
 services:
-  - redis-server
+- redis-server
 env:
-  - REDISCLOUD_URL=redis://localhost:6379
+- REDISCLOUD_URL=redis://localhost:6379
 install:
-  - pip install -r requirements.txt
-  - pip install -r test_requirements.txt
+- pip install -r requirements.txt
+- pip install -r test_requirements.txt
 script: py.test
+deploy:
+  provider: heroku
+  api_key:
+    secure: TG3I+oqwJ7WCaH2dvUL6gCTOPFDVhvEHCwNqhmKRlqiPc/uMNhuucy/44roxeHCz0P0ugSOeTBgsqNKeD20pv+cmuOhk6qqSfttKu7f9kvtv7fp4hT+dYDX9cysIR/Nj2rRVIiAUjOqBVW6DX2Gt8iV7H1jMuhZMi9j4dPozKvA=
+  app: buried-treasure
+  on:
+    repo: grampajoe/buriedtreasure
+    branch: master
