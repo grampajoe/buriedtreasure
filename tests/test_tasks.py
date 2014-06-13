@@ -11,6 +11,7 @@ from tasks import (
     fetch_detail,
     score_listing,
     process_listings,
+    purge_old_data,
 )
 
 
@@ -420,3 +421,15 @@ class TestProcessListings(object):
             assert len(args) == 50
 
         assert r.zcard('treasures') == 500
+
+
+class TestPurgeOldData(object):
+    """Tests for the purge_old_data task."""
+    def test_purges_old_data(self):
+        """Should delete data for listings that no longer have a score."""
+        store_fake_data('123')
+        r.zrem('treasures', '123')
+
+        purge_old_data()
+
+        assert_does_not_exist('123')

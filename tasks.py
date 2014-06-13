@@ -66,6 +66,13 @@ def get_listing_data(*listing_ids):
     return response['results']
 
 
+def purge_data(listing_id):
+    """Purges all data for listing listing_id."""
+    r.delete('listings.%s.data' % listing_id)
+    r.delete('listings.%s.users' % listing_id)
+    r.zrem('treasures', listing_id)
+
+
 @celery.task
 def fetch_detail(*listing_ids):
     """Fetches and stores detailed listing data."""
@@ -84,9 +91,7 @@ def fetch_detail(*listing_ids):
 
             score_listing(listing['listing_id'])
         else:
-            r.delete('listings.%s.data' % listing['listing_id'])
-            r.delete('listings.%s.users' % listing['listing_id'])
-            r.zrem('treasures', listing['listing_id'])
+            purge_data(listing['listing_id'])
 
 
 def score_listing(listing_id):
@@ -119,3 +124,12 @@ def process_listings():
 
     # Purge the unworthy
     r.zremrangebyrank('treasures', 0, -501)
+
+
+@celery.task
+def purge_old_data():
+    """Purges data for listings that no longer have scores."""
+    for data_key in r.keys('listings.*.data'):
+        _, listing_id, _ = data_key.split('.')
+        if r.zscore('treasures', listing_id) is None:
+            purge_data(listing_id)
