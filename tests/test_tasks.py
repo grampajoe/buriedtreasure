@@ -413,12 +413,10 @@ class TestProcessListings(object):
 
         process_listings()
 
-        assert fetch_detail.delay.call_count == 25
-        fetch_detail.delay.assert_any_call(
-            '1999', '1998', '1997', '1996', '1995',
-            '1994', '1993', '1992', '1991', '1990',
-            '1989', '1988', '1987', '1986', '1985',
-            '1984', '1983', '1982', '1981', '1980',
-        )
+        assert fetch_detail.delay.call_count == 10
+
+        for mock_call in fetch_detail.delay.mock_calls:
+            _, args, _ = mock_call
+            assert len(args) == 50
 
         assert r.zcard('treasures') == 500
