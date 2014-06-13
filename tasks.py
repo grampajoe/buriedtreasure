@@ -123,13 +123,7 @@ def process_listings():
         )
 
     # Purge the unworthy
-    r.zremrangebyrank('treasures', 0, -501)
+    unworthy_ids = r.zrange('treasures', 0, -501)
 
-
-@celery.task
-def purge_old_data():
-    """Purges data for listings that no longer have scores."""
-    for data_key in r.keys('listings.*.data'):
-        _, listing_id, _ = data_key.split('.')
-        if r.zscore('treasures', listing_id) is None:
-            purge_data(listing_id)
+    for listing_id in unworthy_ids:
+        purge_data(listing_id)

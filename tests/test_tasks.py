@@ -11,7 +11,6 @@ from tasks import (
     fetch_detail,
     score_listing,
     process_listings,
-    purge_old_data,
 )
 
 
@@ -213,11 +212,11 @@ def assert_does_not_exist(listing_id):
     assert r.zrank('treasures', listing_id) is None
 
 
-def store_fake_data(listing_id):
+def store_fake_data(listing_id, score=9000):
     """Stores fake listing data for listing_id."""
     r.set('listings.%s.data' % listing_id, '{"hello": "there"}')
     r.sadd('listings.%s.users' % listing_id, '999')
-    r.zadd('treasures', listing_id, 9000)
+    r.zadd('treasures', listing_id, score)
 
 
 class TestFetchDetailDestruction(object):
@@ -400,36 +399,37 @@ class TestScoreListing(object):
 class TestProcessListings(object):
     """Tests for the process_listings task."""
     def setup_method(self, method):
+        self.fetch_detail_patch = patch('tasks.fetch_detail')
+        self.fetch_detail = self.fetch_detail_patch.start()
+
         r.flushdb()
 
     def teardown_method(self, method):
+        self.fetch_detail_patch.stop()
+
         r.flushdb()
 
-    @patch('tasks.score_listing')
-    @patch('tasks.fetch_detail')
-    def test_processes_listings(self, fetch_detail, score_listing):
+    def test_processes_listings(self):
         """Should call fetch_detail and score_listing on all listings."""
-        for i in range(2000):
+        for i in range(1000):
             r.zadd('treasures', i, i)
 
         process_listings()
 
-        assert fetch_detail.delay.call_count == 10
+        assert self.fetch_detail.delay.call_count == 10
 
-        for mock_call in fetch_detail.delay.mock_calls:
+        for mock_call in self.fetch_detail.delay.mock_calls:
             _, args, _ = mock_call
             assert len(args) == 50
 
         assert r.zcard('treasures') == 500
 
-
-class TestPurgeOldData(object):
-    """Tests for the purge_old_data task."""
     def test_purges_old_data(self):
-        """Should delete data for listings that no longer have a score."""
-        store_fake_data('123')
-        r.zrem('treasures', '123')
+        """Should delete data for purged listings."""
+        for i in range(1000):
+            store_fake_data(i, score=i)
 
-        purge_old_data()
+        process_listings()
 
-        assert_does_not_exist('123')
+        for i in range(0, 500):
+            assert_does_not_exist(i)

@@ -31,10 +31,6 @@ CELERYBEAT_SCHEDULE = {
         'task': 'tasks.process_listings',
         'schedule': timedelta(minutes=5),
     },
-    'purge_old_data': {
-        'task': 'tasks.purge_old_data',
-        'schedule': timedelta(minutes=1),
-    }
 }
 
 CELERY_ANNOTATIONS = {
