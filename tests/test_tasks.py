@@ -104,15 +104,28 @@ class TestFetchListings(object):
 
         r.flushdb()
 
-    def test_fetch_listings(self):
-        """Should fetch and store listing scores and user ids."""
+    def test_fetch_listings_single_user(self):
+        """Should store user IDs but not scores for items with one user."""
         fetch_listings()
 
-        assert r.zscore('treasures', 1) == 0
+        assert r.zscore('treasures', 1) is None
         assert r.smembers('listings.1.users') == set(['1'])
+
+    def test_fetch_listings_multiple_users(self):
+        """Should store user IDs and scores for items with more than one user."""
+        fetch_listings()
 
         assert r.zscore('treasures', 2) == 0
         assert r.smembers('listings.2.users') == set(['1', '2'])
+
+    def test_fetch_listings_single_new_user(self):
+        """Should store a score for existing items with a single new user."""
+        r.sadd('listings.1.users', '9')
+
+        fetch_listings()
+
+        assert r.zscore('treasures', 1) == 0
+        assert r.smembers('listings.1.users') == set(['1', '9'])
 
     def test_fetch_listings_existing_score(self):
         """Should not overwrite existing scores."""

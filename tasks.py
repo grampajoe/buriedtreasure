@@ -50,7 +50,9 @@ def fetch_listings():
     user_map = unique_users(treasuries)
 
     for listing_id, users in user_map.iteritems():
-        if not r.zscore('treasures', listing_id):
+        all_users = r.smembers('listings.%s.users' % listing_id).union(users)
+
+        if not r.zscore('treasures', listing_id) and len(all_users) > 1:
             r.zadd('treasures', listing_id, 0)
 
         r.sadd('listings.%s.users' % listing_id, *users)
