@@ -31,6 +31,10 @@ CELERYBEAT_SCHEDULE = {
         'task': 'tasks.process_listings',
         'schedule': timedelta(minutes=5),
     },
+    'scrub_scrubs': {
+        'task': 'tasks.scrub_scrubs',
+        'schedule': timedelta(minutes=5),
+    },
 }
 
 CELERY_ANNOTATIONS = {

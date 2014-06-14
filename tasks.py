@@ -1,6 +1,8 @@
-from celery import Celery
 import json
+import random
+
 import requests
+from celery import Celery
 
 from app import app, r
 
@@ -50,10 +52,23 @@ def fetch_listings():
     user_map = unique_users(treasuries)
 
     for listing_id, users in user_map.iteritems():
-        if not r.zscore('treasures', listing_id):
+        all_users = r.smembers('listings.%s.users' % listing_id).union(users)
+
+        if not r.zscore('treasures', listing_id) and len(all_users) > 1:
             r.zadd('treasures', listing_id, 0)
 
         r.sadd('listings.%s.users' % listing_id, *users)
+
+
+@celery.task
+def scrub_scrubs():
+    """Randomly culls single-user lists."""
+    users_keys = r.keys('listings.*.users')
+
+    for key in random.sample(users_keys, len(users_keys)/2):
+        if r.scard(key) < 2:
+            _, listing_id, _ = key.split('.')
+            purge_data(listing_id)
 
 
 def get_listing_data(*listing_ids):
