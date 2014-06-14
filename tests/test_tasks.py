@@ -150,7 +150,7 @@ def test_scrub_scrubs():
     for i in range(50):
         r.sadd('listings.%s.users' % i, '1', '2')
 
-    for i in range(50, 1000):
+    for i in range(50, 6000):
         r.sadd('listings.%s.users' % i, '1')
 
 
@@ -160,10 +160,10 @@ def test_scrub_scrubs():
     for i in range(50):
         assert r.scard('listings.%s.users' % i) == 2
 
-    # Should take a sample of about half, excluding the 2 lists
+    # Should leave at least 5000, taking about half of the remainder
     remaining_keys = r.keys('listings.*.users')
-    assert len(remaining_keys) <= 550
-    assert len(remaining_keys) >= 500
+    assert len(remaining_keys) <= 5550
+    assert len(remaining_keys) >= 5000
 
 
 @patch('tasks.api_call')

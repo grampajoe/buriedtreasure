@@ -65,7 +65,10 @@ def scrub_scrubs():
     """Randomly culls single-user lists."""
     users_keys = r.keys('listings.*.users')
 
-    for key in random.sample(users_keys, len(users_keys)/2):
+    # Preserve at least 5000, scrubbing half the remainder
+    scrub_count = max(len(users_keys) - 5000, 0)/2
+
+    for key in random.sample(users_keys, scrub_count):
         if r.scard(key) < 2:
             _, listing_id, _ = key.split('.')
             purge_data(listing_id)
