@@ -11,6 +11,7 @@ from tasks import (
     fetch_detail,
     score_listing,
     process_listings,
+    scrub_scrubs,
 )
 
 
@@ -142,6 +143,27 @@ class TestFetchListings(object):
         fetch_listings()
 
         assert r.smembers('listings.1.users') == set(['9', '10', 'three', '1'])
+
+
+def test_scrub_scrubs():
+    """Should randomly cull user lists of one user."""
+    for i in range(50):
+        r.sadd('listings.%s.users' % i, '1', '2')
+
+    for i in range(50, 1000):
+        r.sadd('listings.%s.users' % i, '1')
+
+
+    scrub_scrubs()
+
+    # All of the 2 or more lists should be there
+    for i in range(50):
+        assert r.scard('listings.%s.users' % i) == 2
+
+    # Should take a sample of about half, excluding the 2 lists
+    remaining_keys = r.keys('listings.*.users')
+    assert len(remaining_keys) <= 550
+    assert len(remaining_keys) >= 500
 
 
 @patch('tasks.api_call')
