@@ -33,7 +33,7 @@ CELERYBEAT_SCHEDULE = {
     },
     'scrub_scrubs': {
         'task': 'tasks.scrub_scrubs',
-        'schedule': timedelta(minutes=5),
+        'schedule': timedelta(minutes=1),
     },
 }
 
