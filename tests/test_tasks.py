@@ -79,6 +79,7 @@ def test_get_treasuries(api_call):
     api_call.assert_called_with(
         'treasuries',
         sort_on='created',
+        fields='user_id,listings',
     )
     assert result == api_call.return_value['results']
 
@@ -193,7 +194,9 @@ def test_get_listing_data(api_call):
     assert data == listings
     api_call.assert_called_with(
         'listings/%s' % ','.join(map(str, listing_ids)),
-        includes='Shop,Images',
+        fields='listing_id,state,views,quantity,'
+               'materials,title,url,price,currency_code',
+        includes='Shop(url,shop_name),Images(url_170x135):1:0',
     )
 
 

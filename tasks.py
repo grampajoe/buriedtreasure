@@ -30,7 +30,11 @@ def api_call(endpoint, **params):
 
 def get_treasuries():
     """Returns recent treasury data with listing data."""
-    response = api_call('treasuries', sort_on='created')
+    response = api_call(
+        'treasuries',
+        sort_on='created',
+        fields='user_id,listings',
+    )
 
     return response['results']
 
@@ -102,7 +106,9 @@ def get_listing_data(*listing_ids):
     """Returns data for a given listing ID."""
     response = api_call(
         'listings/%s' % ','.join(map(str, listing_ids)),
-        includes='Shop,Images',
+        fields='listing_id,state,views,quantity,'
+               'materials,title,url,price,currency_code',
+        includes='Shop(url,shop_name),Images(url_170x135):1:0',
     )
 
     return response['results']
