@@ -4,8 +4,6 @@ import json
 
 app = Flask(__name__)
 
-app.secret_key = "\x9bT\xc2\xea\x03\xc2\x9b]\xa2\xeb\xcb\xe5\xce[\x19^\xaf3\xbf\xbb\xc4s\xb4'"
-
 app.config.from_object('settings')
 
 
