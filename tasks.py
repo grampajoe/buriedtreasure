@@ -54,18 +54,34 @@ def fetch_listings():
     treasuries = get_treasuries()
     user_map = unique_users(treasuries)
 
-    for listing_id, users in user_map.iteritems():
-        all_users = r.smembers('listings.%s.users' % listing_id).union(users)
+    users_pipe = r.pipeline()
+    score_pipe = r.pipeline()
+    for listing_id in user_map.keys():
+        users_pipe.smembers('listings.%s.users' % listing_id)
+        score_pipe.zscore('treasures', listing_id)
 
-        if not r.zscore('treasures', listing_id) and len(all_users) > 1:
+    users_list = users_pipe.execute()
+    score_list = score_pipe.execute()
+
+    combined_data = zip(user_map.keys(), users_list, score_list)
+
+    update_pipe = r.pipeline()
+
+    for listing_id, existing_users, score in combined_data:
+        users = user_map[listing_id]
+        all_users = users.union(existing_users)
+
+        if not score and len(all_users) > 1:
             logger.debug(
                 'Found %s users for %s: %r' %
                 (len(all_users), listing_id, all_users),
             )
 
-            r.zadd('treasures', listing_id, 0)
+            update_pipe.zadd('treasures', listing_id, 0)
 
-        r.sadd('listings.%s.users' % listing_id, *users)
+        update_pipe.sadd('listings.%s.users' % listing_id, *users)
+
+    update_pipe.execute()
 
 
 @celery.task
