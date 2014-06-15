@@ -21,7 +21,7 @@ r = get_redis()
 
 @app.route('/')
 def index():
-    treasure_ids = r.zrevrange('treasures', 0, 100)
+    treasure_ids = r.zrevrange('treasures', 0, 99)
     treasure_keys = map(lambda s: 'listings.'+str(s), treasure_ids)
     treasures = []
 

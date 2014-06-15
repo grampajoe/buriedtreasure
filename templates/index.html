@@ -8,9 +8,9 @@
       <li><a rel="sort-treasuries" href="#">Users</a></li>
       <li><a rel="sort-quantity" href="#" data-reverse="true">Quantity</a></li>
     </ul>
-    <ul class="treasures thumbnails">
+    <ul id="treasures" class="treasures thumbnails">
     {% for treasure in treasures %}
-    <li class="span2 thumbnail {% if 'gold' in treasure['materials'] %}gold{% endif %}" data-value="{{ loop.index }}" data-views="{{ treasure['views'] }}" data-treasuries="{{ treasure['users']|length }}" data-quantity="{{ treasure['quantity'] }}">
+    <li class="span2 thumbnail {% if 'gold' in treasure['materials'] %}gold{% endif %}" data-value="{{ loop.index }}" data-views="{{ treasure['views'] }}" data-treasuries="{{ treasure['users']|length }}" data-quantity="{{ treasure['quantity'] }}" id="listing_{{ treasure['listing_id'] }}">
         <a href="{{ treasure['url'] }}" title="{{ treasure['title'] }}" onclick="window.open(this.href); return false;">
           <img src="{{ treasure['Images'][0]['url_170x135'] }}" alt="{{ treasure['title'] }}" />
           <p class="oneline"><strong>{{ treasure['title'] }}</strong></p>
