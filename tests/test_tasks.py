@@ -31,20 +31,20 @@ def fake_treasuries():
 
     treasuries = [
         {
-            'user_id': '1',
+            'user_id': 1,
             'listings': [
                 listings[0],
             ],
         },
         {
-            'user_id': '1',
+            'user_id': 1,
             'listings': [
                 listings[0],
                 listings[1],
             ],
         },
         {
-            'user_id': '2',
+            'user_id': 2,
             'listings': [
                 listings[1],
             ],
@@ -143,6 +143,14 @@ class TestFetchListings(object):
         fetch_listings()
 
         assert r.smembers('listings.1.users') == set(['9', '10', 'three', '1'])
+
+    def test_fetch_listings_duplicate_user_no_score(self):
+        """Should not add a score if only one unique user ID is found."""
+        r.sadd('listings.1.users', '1')
+
+        fetch_listings()
+
+        assert r.smembers('listings.1.users') == set(['1'])
 
 
 def test_scrub_scrubs():

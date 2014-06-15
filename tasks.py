@@ -3,12 +3,15 @@ import random
 
 import requests
 from celery import Celery
+from celery.utils.log import get_task_logger
 
 from app import app, r
 
-celery = Celery('tasks')
+celery = Celery(__name__)
 
 celery.config_from_object('celeryconfig')
+
+logger = get_task_logger(__name__)
 
 
 def api_call(endpoint, **params):
@@ -37,7 +40,7 @@ def unique_users(treasuries):
     listings = {}
 
     for treasury in treasuries:
-        user_id = treasury['user_id']
+        user_id = str(treasury['user_id'])
         for listing in treasury['listings']:
             listing_id = listing['data']['listing_id']
             listings.setdefault(listing_id, set([])).add(user_id)
@@ -55,6 +58,11 @@ def fetch_listings():
         all_users = r.smembers('listings.%s.users' % listing_id).union(users)
 
         if not r.zscore('treasures', listing_id) and len(all_users) > 1:
+            logger.debug(
+                'Found %s users for %s: %r' %
+                (len(all_users), listing_id, all_users),
+            )
+
             r.zadd('treasures', listing_id, 0)
 
         r.sadd('listings.%s.users' % listing_id, *users)
