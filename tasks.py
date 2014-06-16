@@ -9,7 +9,7 @@ from app import app, r
 
 celery = Celery(__name__)
 
-celery.config_from_object('celeryconfig')
+celery.config_from_object(app.config)
 
 logger = get_task_logger(__name__)
 
