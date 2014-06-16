@@ -25,6 +25,11 @@ body {
   margin-left: 90px;
 }
 
+.thumbnail img {
+    width: 140px;
+    height: 111px;
+}
+
 .gold {
   background: #ffeb9d;
 }
