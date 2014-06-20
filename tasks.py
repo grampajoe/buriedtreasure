@@ -132,6 +132,7 @@ def fetch_detail(*listing_ids):
             listing.get('quantity', 0) > 0 and
             listing.get('views', 0) > 0
         ):
+            listing['users'] = r.scard('listings.%s.users' % listing['listing_id'])
             r.set(
                 'listings.%s.data' % listing['listing_id'],
                 json.dumps(listing),

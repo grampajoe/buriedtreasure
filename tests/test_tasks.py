@@ -1,4 +1,5 @@
 import json
+import pytest
 from mock import patch, call
 
 from app import r
@@ -15,6 +16,7 @@ from tasks import (
 )
 
 
+@pytest.fixture
 def fake_treasuries():
     listings = [
         {
@@ -52,6 +54,34 @@ def fake_treasuries():
     ]
 
     return treasuries
+
+
+@pytest.fixture
+def listings():
+    """Some fake listings!"""
+    return [
+        {
+            'listing_id': '1',
+            'state': 'active',
+            'quantity': 1,
+            'views': 1,
+            'materials': ['poop', 'butt'],
+        },
+        {
+            'listing_id': '2',
+            'state': 'active',
+            'quantity': 1,
+            'views': 1,
+            'materials': ['poop', 'butt'],
+        },
+        {
+            'listing_id': '3',
+            'state': 'active',
+            'quantity': 1,
+            'views': 1,
+            'materials': ['poop', 'butt'],
+        },
+    ]
 
 
 @patch('tasks.api_call')
@@ -162,7 +192,6 @@ def test_scrub_scrubs():
     for i in range(50, 6000):
         r.sadd('listings.%s.users' % i, '1')
 
-
     scrub_scrubs()
 
     # All of the 2 or more lists should be there
@@ -202,53 +231,28 @@ def test_get_listing_data(api_call):
 
 class TestFetchDetail(object):
     """Tests for the fetch_detail task."""
-    def setup_method(self, method):
-        self.get_listing_data_patch = patch('tasks.get_listing_data')
-        self.get_listing_data = self.get_listing_data_patch.start()
-
-        self.listings = [
-            {
-                'listing_id': '1',
-                'state': 'active',
-                'quantity': 1,
-                'views': 1,
-                'materials': ['poop', 'butt'],
-            },
-            {
-                'listing_id': '2',
-                'state': 'active',
-                'quantity': 1,
-                'views': 1,
-                'materials': ['poop', 'butt'],
-            },
-            {
-                'listing_id': '3',
-                'state': 'active',
-                'quantity': 1,
-                'views': 1,
-                'materials': ['poop', 'butt'],
-            },
-        ]
-
-        self.get_listing_data.return_value = self.listings
-
     def teardown_method(self, method):
-        self.get_listing_data_patch.stop()
-
         r.flushdb()
 
+    @patch('tasks.get_listing_data')
     @patch('tasks.score_listing')
-    def test_fetch_detail(self, score_listing):
+    def test_fetch_detail(self, score_listing, get_listing_data, listings):
         """Should get and store listing data."""
+        # Make copies to avoid modifying them
+        get_listing_data.return_value = [listing.copy() for listing in listings]
+
         listing_ids = ['1', '2', '3']
+        for listing_id in listing_ids:
+            r.sadd('listings.%s.users' % listing_id, '1', '2', '3')
 
         result = fetch_detail(*listing_ids)
 
-        for listing_id, listing in zip(listing_ids, self.listings):
-            data = json.loads(r.get('listings.%s.data' % listing_id))
+        for listing in listings:
+            data = json.loads(r.get('listings.%s.data' % listing['listing_id']))
 
+            assert data.pop('users') == 3
             assert data == listing
-            score_listing.assert_any_call(listing_id)
+            score_listing.assert_any_call(listing['listing_id'])
 
 
 def assert_does_not_exist(listing_id):
