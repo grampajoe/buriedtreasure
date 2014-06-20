@@ -16,7 +16,6 @@ class TestIndex(object):
 
         for i in range(1000):
             r.zadd('treasures', i, i)
-            r.sadd('listings.%s.users', str(i))
             r.set('listings.%s.data' % i, json.dumps({
                 'listing_id': i,
                 'quantity': i,
@@ -30,6 +29,7 @@ class TestIndex(object):
                 'price': 123,
                 'currency_code': 'USD',
                 'Shop': {'shop_name': 'Heollo', 'url': 'http://google.com'},
+                'users': 10,
             }))
 
     def test_get_response(self):
