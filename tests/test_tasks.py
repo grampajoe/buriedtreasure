@@ -81,42 +81,28 @@ def listings():
     ]
 
 
-@patch('tasks.api_call')
-def test_get_treasuries(api_call):
-    """Should get a list of treasuries with listing data."""
-    api_call.return_value = {
-        'results': [
-            {
-                'user_id': i,
-                'listings': [
-                    {
-                        'data': {
-                            'listing_id': j,
-                        },
-                    }
-                    for j in range(10)
-                ],
-            }
-            for i in range(10)
-        ],
-    }
+def assert_does_not_exist(listing_id):
+    """Asserts that listing data does not exist for listing_id."""
+    assert not r.exists('listings.%s.data' % listing_id)
+    assert not r.exists('listings.%s.users' % listing_id)
+    assert r.zrank('treasures', listing_id) is None
 
-    result = get_treasuries()
 
-    api_call.assert_called_with(
-        'treasuries',
-        sort_on='created',
-        fields='user_id,listings',
+def store_fake_data(listing_id, score=9000):
+    """Stores fake listing data for listing_id."""
+    r.set('listings.%s.data' % listing_id, '{"hello": "there"}')
+    r.sadd('listings.%s.users' % listing_id, '999')
+    r.zadd('treasures', listing_id, score)
+
+
+def assert_almost_equal(actual, expected, error=0.01):
+    """Asserts that expected is within diff of actual."""
+    diff = abs(expected - actual)
+    actual_error = float(diff) / expected
+
+    assert actual_error < error, '%s was not within %d%% of %s.' % (
+        actual, error * 100, expected,
     )
-    assert result == api_call.return_value['results']
-
-
-def test_unique_users():
-    """Should return a map of listing ids to unique user ids."""
-    listing_map = unique_users(fake_treasuries())
-
-    assert listing_map['1'] == set(['1'])
-    assert listing_map['2'] == set(['1', '2'])
 
 
 class TestFetchListings(object):
@@ -132,6 +118,35 @@ class TestFetchListings(object):
         self.get_treasuries_patch.stop()
 
         r.flushdb()
+
+    @patch('tasks.api_call')
+    def test_get_treasuries(self, api_call):
+        """Should get a list of treasuries with listing data."""
+        api_call.return_value = {
+            'results': [
+                {
+                    'user_id': i,
+                    'listings': [
+                        {
+                            'data': {
+                                'listing_id': j,
+                            },
+                        }
+                        for j in range(10)
+                    ],
+                }
+                for i in range(10)
+            ],
+        }
+
+        result = get_treasuries()
+
+        api_call.assert_called_with(
+            'treasuries',
+            sort_on='created',
+            fields='user_id,listings',
+        )
+        assert result == api_call.return_value['results']
 
     def test_fetch_listings_single_user(self):
         """Should store user IDs but not scores for items with one user."""
@@ -181,49 +196,29 @@ class TestFetchListings(object):
         assert r.smembers('listings.1.users') == set(['1'])
 
 
-def test_scrub_scrubs():
-    """Should randomly cull user lists of one user."""
-    for i in range(50):
-        r.sadd('listings.%s.users' % i, '1', '2')
+class TestScrubScrubs():
+    """Tests for the scrub_scrubs task."""
+    def teardown_method(self, method):
+        r.flushdb()
 
-    for i in range(50, 6000):
-        r.sadd('listings.%s.users' % i, '1')
+    def test_scrub_scrubs(self):
+        """Should randomly cull user lists of one user."""
+        for i in range(50):
+            r.sadd('listings.%s.users' % i, '1', '2')
 
-    scrub_scrubs()
+        for i in range(50, 6000):
+            r.sadd('listings.%s.users' % i, '1')
 
-    # All of the 2 or more lists should be there
-    for i in range(50):
-        assert r.scard('listings.%s.users' % i) == 2
+        scrub_scrubs()
 
-    # Should leave at least 5000, taking about half of the remainder
-    remaining_keys = r.keys('listings.*.users')
-    assert len(remaining_keys) <= 5550
-    assert len(remaining_keys) >= 5000
+        # All of the 2 or more lists should be there
+        for i in range(50):
+            assert r.scard('listings.%s.users' % i) == 2
 
-
-@patch('tasks.api_call')
-def test_get_listing_data(api_call):
-    """Should get listing data given a listing ID."""
-    listing_ids = [1, 2, 3]
-    listings = [
-        {'listing_id': '1', 'materials': ['poop', 'butt']},
-        {'listing_id': '2', 'materials': ['poop', 'butt']},
-        {'listing_id': '3', 'materials': ['poop', 'butt']},
-    ]
-
-    api_call.return_value = {
-        'results': listings,
-    }
-
-    data = get_listing_data(*listing_ids)
-
-    assert data == listings
-    api_call.assert_called_with(
-        'listings/%s' % ','.join(map(str, listing_ids)),
-        fields='listing_id,state,views,quantity,'
-               'materials,title,url,price,currency_code',
-        includes='Shop(url,shop_name),Images(url_170x135):1:0',
-    )
+        # Should leave at least 5000, taking about half of the remainder
+        remaining_keys = r.keys('listings.*.users')
+        assert len(remaining_keys) <= 5550
+        assert len(remaining_keys) >= 5000
 
 
 @patch('tasks.get_listing_data', new=Mock(return_value=listings()))
@@ -237,6 +232,30 @@ class TestFetchDetail(object):
 
     def teardown_method(self, method):
         r.flushdb()
+
+    @patch('tasks.api_call')
+    def test_get_listing_data(self, api_call):
+        """Should get listing data given a listing ID."""
+        listing_ids = [1, 2, 3]
+        listings = [
+            {'listing_id': '1', 'materials': ['poop', 'butt']},
+            {'listing_id': '2', 'materials': ['poop', 'butt']},
+            {'listing_id': '3', 'materials': ['poop', 'butt']},
+        ]
+
+        api_call.return_value = {
+            'results': listings,
+        }
+
+        data = get_listing_data(*listing_ids)
+
+        assert data == listings
+        api_call.assert_called_with(
+            'listings/%s' % ','.join(map(str, listing_ids)),
+            fields='listing_id,state,views,quantity,'
+                   'materials,title,url,price,currency_code',
+            includes='Shop(url,shop_name),Images(url_170x135):1:0',
+        )
 
     def test_fetch_detail(self):
         """Should get and store listing data."""
@@ -256,20 +275,6 @@ class TestFetchDetail(object):
         for listing in listings():
             listing['users'] = 3
             score_listing.assert_any_call(listing)
-
-
-def assert_does_not_exist(listing_id):
-    """Asserts that listing data does not exist for listing_id."""
-    assert not r.exists('listings.%s.data' % listing_id)
-    assert not r.exists('listings.%s.users' % listing_id)
-    assert r.zrank('treasures', listing_id) is None
-
-
-def store_fake_data(listing_id, score=9000):
-    """Stores fake listing data for listing_id."""
-    r.set('listings.%s.data' % listing_id, '{"hello": "there"}')
-    r.sadd('listings.%s.users' % listing_id, '999')
-    r.zadd('treasures', listing_id, score)
 
 
 class TestFetchDetailDestruction(object):
@@ -391,16 +396,6 @@ class TestFetchDetailDestruction(object):
         fetch_detail('3')
 
         assert_does_not_exist('3')
-
-
-def assert_almost_equal(actual, expected, error=0.01):
-    """Asserts that expected is within diff of actual."""
-    diff = abs(expected - actual)
-    actual_error = float(diff) / expected
-
-    assert actual_error < error, '%s was not within %d%% of %s.' % (
-        actual, error * 100, expected,
-    )
 
 
 class TestScoreListing(object):
