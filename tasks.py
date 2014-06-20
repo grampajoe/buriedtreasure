@@ -138,18 +138,15 @@ def fetch_detail(*listing_ids):
                 json.dumps(listing),
             )
 
-            score_listing(listing['listing_id'])
+            score_listing(listing)
         else:
             purge_data(listing['listing_id'])
 
 
-def score_listing(listing_id):
+def score_listing(listing):
     """Calculate and save a listing's score."""
-    listing = json.loads(r.get('listings.%s.data' % listing_id))
-    users = r.scard('listings.%s.users' % listing_id)
-
     score = (
-        users * 10
+        listing['users'] * 10
     ) / (
         float(listing['views']) * float(listing['quantity']) + 1
     )
@@ -157,7 +154,7 @@ def score_listing(listing_id):
     if 'gold' in listing['materials']:
         score = score * 100
 
-    r.zadd('treasures', listing_id, score)
+    r.zadd('treasures', listing['listing_id'], score)
 
 
 @celery.task

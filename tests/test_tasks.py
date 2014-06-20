@@ -1,6 +1,5 @@
 import json
-import pytest
-from mock import patch, call
+from mock import patch, call, Mock
 
 from app import r
 
@@ -16,7 +15,6 @@ from tasks import (
 )
 
 
-@pytest.fixture
 def fake_treasuries():
     listings = [
         {
@@ -56,7 +54,6 @@ def fake_treasuries():
     return treasuries
 
 
-@pytest.fixture
 def listings():
     """Some fake listings!"""
     return [
@@ -229,30 +226,36 @@ def test_get_listing_data(api_call):
     )
 
 
+@patch('tasks.get_listing_data', new=Mock(return_value=listings()))
 class TestFetchDetail(object):
     """Tests for the fetch_detail task."""
+    def setup_method(self, method):
+        self.listing_ids = [listing['listing_id'] for listing in listings()]
+
+        for listing_id in self.listing_ids:
+            r.sadd('listings.%s.users' % listing_id, 1, 2, 3)
+
     def teardown_method(self, method):
         r.flushdb()
 
-    @patch('tasks.get_listing_data')
-    @patch('tasks.score_listing')
-    def test_fetch_detail(self, score_listing, get_listing_data, listings):
+    def test_fetch_detail(self):
         """Should get and store listing data."""
-        # Make copies to avoid modifying them
-        get_listing_data.return_value = [listing.copy() for listing in listings]
+        result = fetch_detail(*self.listing_ids)
 
-        listing_ids = ['1', '2', '3']
-        for listing_id in listing_ids:
-            r.sadd('listings.%s.users' % listing_id, '1', '2', '3')
-
-        result = fetch_detail(*listing_ids)
-
-        for listing in listings:
+        for listing in listings():
             data = json.loads(r.get('listings.%s.data' % listing['listing_id']))
 
             assert data.pop('users') == 3
             assert data == listing
-            score_listing.assert_any_call(listing['listing_id'])
+
+    @patch('tasks.score_listing')
+    def test_scores_things(self, score_listing):
+        """Should score each fetched listing."""
+        fetch_detail(*self.listing_ids)
+
+        for listing in listings():
+            listing['users'] = 3
+            score_listing.assert_any_call(listing)
 
 
 def assert_does_not_exist(listing_id):
@@ -402,44 +405,44 @@ def assert_almost_equal(actual, expected, error=0.01):
 
 class TestScoreListing(object):
     """Tests for listing scoring."""
-    def setup_method(self, method):
-        r.flushdb()
-
     def teardown_method(self, method):
         r.flushdb()
 
     def test_score(self):
         """Should score things based on a cool formula."""
         # 4 users, 9000 views, no gold
-        r.sadd('listings.1.users', 1, 2, 3, 4)
-        r.set('listings.1.data', json.dumps({
+        listing1 = {
+            'listing_id': 1,
             'quantity': 1,
             'state': 'active',
             'views': 9000,
             'materials': [],
-        }))
+            'users': 4,
+        }
 
         # 40 users, 9 views, 10 quantity, no gold
-        r.sadd('listings.2.users', *range(40))
-        r.set('listings.2.data', json.dumps({
+        listing2 = {
+            'listing_id': 2,
             'quantity': 10,
             'state': 'active',
             'views': 9,
             'materials': [],
-        }))
+            'users': 40,
+        }
 
         # 1 user, 10 views, 10 quantity, gold
-        r.sadd('listings.3.users', 1)
-        r.set('listings.3.data', json.dumps({
+        listing3 = {
+            'listing_id': 3,
             'quantity': 10,
             'state': 'active',
             'views': 10,
             'materials': ['gold'],
-        }))
+            'users': 1,
+        }
 
-        score_listing(1)
-        score_listing(2)
-        score_listing(3)
+        score_listing(listing1) 
+        score_listing(listing2)
+        score_listing(listing3)
 
         assert_almost_equal(r.zscore('treasures', '1'), 0.004443950672147539)
         assert_almost_equal(r.zscore('treasures', '2'), 4.395604395604396)
