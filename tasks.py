@@ -26,8 +26,8 @@ def api_call(endpoint, **params):
     rate_limit_remaining = response.headers.get('X-RateLimit-Remaining')
     if rate_limit is not None:
         newrelic.agent.record_custom_metrics([
-            ('Custom/Etsy/RateLimit', rate_limit),
-            ('Custom/Etsy/RateLimitRemaining', rate_limit_remaining),
+            ('Custom/Etsy/RateLimit', int(rate_limit)),
+            ('Custom/Etsy/RateLimitRemaining', int(rate_limit_remaining)),
         ])
 
     try:
