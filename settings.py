@@ -40,7 +40,7 @@ CELERYBEAT_SCHEDULE = {
     },
     'process_listings': {
         'task': 'tasks.process_listings',
-        'schedule': timedelta(minutes=5),
+        'schedule': timedelta(minutes=2, seconds=30),
     },
     'scrub_scrubs': {
         'task': 'tasks.scrub_scrubs',
@@ -50,6 +50,6 @@ CELERYBEAT_SCHEDULE = {
 
 CELERY_ANNOTATIONS = {
     'tasks.fetch_detail': {
-        'rate_limit': '5/m',
+        'rate_limit': '10/m',
     }
 }
