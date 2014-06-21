@@ -109,7 +109,7 @@ def score_listing(listing):
     )
 
     score = (
-        listing['users'] * 10
+        listing['users'] * 100
     ) / (
         age
         * float(listing['views'])
@@ -118,7 +118,7 @@ def score_listing(listing):
     )
 
     if 'gold' in listing['materials']:
-        score = score + 500
+        score = score + 5000
 
     r.zadd('treasures', listing['listing_id'], score)
 
