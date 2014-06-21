@@ -2,6 +2,7 @@ import json
 import random
 import time
 
+import newrelic.agent
 import requests
 from celery import Celery
 from celery.utils.log import get_task_logger
@@ -19,6 +20,15 @@ def api_call(endpoint, **params):
     params['api_key'] = app.config['ETSY_API_KEY']
     url = app.config['API_SERVER'] + endpoint
     response = requests.get(url, params=params)
+
+    # Send rate limit metrics to NewRelic
+    rate_limit = response.headers.get('X-RateLimit-Limit')
+    rate_limit_remaining = response.headers.get('X-RateLimit-Remaining')
+    if rate_limit is not None:
+        newrelic.agent.record_custom_metrics([
+            ('Custom/Etsy/RateLimit', rate_limit),
+            ('Custom/Etsy/RateLimitRemaining', rate_limit_remaining),
+        ])
 
     try:
         return response.json()
