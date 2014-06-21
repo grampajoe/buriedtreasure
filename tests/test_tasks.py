@@ -441,6 +441,8 @@ class TestScoreListing(object):
 
     def test_score_decays_with_age(self):
         """Should score older things lower."""
+        now = time.time()
+
         listing1 = {
             'listing_id': 1,
             'quantity': 1,
@@ -448,7 +450,7 @@ class TestScoreListing(object):
             'views': 9000,
             'materials': [],
             'users': 4,
-            'original_creation_tsz': '12345',
+            'original_creation_tsz': str(now),
         }
 
         listing2 = {
@@ -458,7 +460,7 @@ class TestScoreListing(object):
             'views': 9000,
             'materials': [],
             'users': 4,
-            'original_creation_tsz': '1345',
+            'original_creation_tsz': str(now - 100),
         }
 
         listing3 = {
@@ -468,7 +470,7 @@ class TestScoreListing(object):
             'views': 9000,
             'materials': [],
             'users': 4,
-            'original_creation_tsz': '145',
+            'original_creation_tsz': str(now - 500),
         }
 
         score_listing(listing1) 
@@ -477,6 +479,20 @@ class TestScoreListing(object):
 
         assert r.zscore('treasures', '1') > r.zscore('treasures', '2')
         assert r.zscore('treasures', '2') > r.zscore('treasures', '3')
+
+    def test_never_negative(self):
+        """Event the oldest things shouldn't have negative scores."""
+        score_listing({
+            'listing_id': 1,
+            'quantity': 1,
+            'state': 'active',
+            'views': 9000,
+            'materials': [],
+            'users': 4,
+            'original_creation_tsz': '1',
+        })
+
+        assert r.zscore('treasures', '1') > 0
 
 
 class TestProcessListings(object):
