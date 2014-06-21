@@ -1,4 +1,5 @@
 import json
+import time
 from mock import patch, call, Mock
 
 from app import r
@@ -93,16 +94,6 @@ def store_fake_data(listing_id, score=9000):
     r.set('listings.%s.data' % listing_id, '{"hello": "there"}')
     r.sadd('listings.%s.users' % listing_id, '999')
     r.zadd('treasures', listing_id, score)
-
-
-def assert_almost_equal(actual, expected, error=0.01):
-    """Asserts that expected is within diff of actual."""
-    diff = abs(expected - actual)
-    actual_error = float(diff) / expected
-
-    assert actual_error < error, '%s was not within %d%% of %s.' % (
-        actual, error * 100, expected,
-    )
 
 
 class TestFetchListings(object):
@@ -253,11 +244,12 @@ class TestFetchDetail(object):
         api_call.assert_called_with(
             'listings/%s' % ','.join(map(str, listing_ids)),
             fields='listing_id,state,views,quantity,'
-                   'materials,title,url,price,currency_code',
+                   'materials,title,url,price,currency_code,original_creation_tsz',
             includes='Shop(url,shop_name),Images(url_170x135):1:0',
         )
 
-    def test_fetch_detail(self):
+    @patch('tasks.score_listing')
+    def test_fetch_detail(self, score_listing):
         """Should get and store listing data."""
         result = fetch_detail(*self.listing_ids)
 
@@ -405,6 +397,8 @@ class TestScoreListing(object):
 
     def test_score(self):
         """Should score things based on a cool formula."""
+        now = str(time.time())
+
         # 4 users, 9000 views, no gold
         listing1 = {
             'listing_id': 1,
@@ -413,6 +407,7 @@ class TestScoreListing(object):
             'views': 9000,
             'materials': [],
             'users': 4,
+            'original_creation_tsz': now,
         }
 
         # 40 users, 9 views, 10 quantity, no gold
@@ -423,6 +418,7 @@ class TestScoreListing(object):
             'views': 9,
             'materials': [],
             'users': 40,
+            'original_creation_tsz': now,
         }
 
         # 1 user, 10 views, 10 quantity, gold
@@ -433,15 +429,54 @@ class TestScoreListing(object):
             'views': 10,
             'materials': ['gold'],
             'users': 1,
+            'original_creation_tsz': now,
+        }
+
+        score_listing(listing1)
+        score_listing(listing2)
+        score_listing(listing3)
+
+        assert r.zscore('treasures', '1') < r.zscore('treasures', '2')
+        assert r.zscore('treasures', '2') < r.zscore('treasures', '3')
+
+    def test_score_decays_with_age(self):
+        """Should score older things lower."""
+        listing1 = {
+            'listing_id': 1,
+            'quantity': 1,
+            'state': 'active',
+            'views': 9000,
+            'materials': [],
+            'users': 4,
+            'original_creation_tsz': '12345',
+        }
+
+        listing2 = {
+            'listing_id': 2,
+            'quantity': 1,
+            'state': 'active',
+            'views': 9000,
+            'materials': [],
+            'users': 4,
+            'original_creation_tsz': '1345',
+        }
+
+        listing3 = {
+            'listing_id': 3,
+            'quantity': 1,
+            'state': 'active',
+            'views': 9000,
+            'materials': [],
+            'users': 4,
+            'original_creation_tsz': '145',
         }
 
         score_listing(listing1) 
         score_listing(listing2)
         score_listing(listing3)
 
-        assert_almost_equal(r.zscore('treasures', '1'), 0.004443950672147539)
-        assert_almost_equal(r.zscore('treasures', '2'), 4.395604395604396)
-        assert_almost_equal(r.zscore('treasures', '3'), 9.900990099009901)
+        assert r.zscore('treasures', '1') > r.zscore('treasures', '2')
+        assert r.zscore('treasures', '2') > r.zscore('treasures', '3')
 
 
 class TestProcessListings(object):

@@ -1,5 +1,6 @@
 import json
 import random
+import time
 
 import requests
 from celery import Celery
@@ -57,7 +58,7 @@ def get_listing_data(*listing_ids):
     response = api_call(
         'listings/%s' % ','.join(map(str, listing_ids)),
         fields='listing_id,state,views,quantity,'
-               'materials,title,url,price,currency_code',
+               'materials,title,url,price,currency_code,original_creation_tsz',
         includes='Shop(url,shop_name),Images(url_170x135):1:0',
     )
 
@@ -90,8 +91,15 @@ def save_listing(listing):
 
 def score_listing(listing):
     """Calculate and save a listing's score."""
+    # Age is expressed in days
+    age = (
+        time.time() - float(listing['original_creation_tsz'])
+    ) / (
+        60 * 60 * 24  # One day in seconds
+    )
+
     score = (
-        listing['users'] * 10
+        listing['users'] * 10 * (60 - age)
     ) / (
         float(listing['views']) * float(listing['quantity']) + 1
     )
