@@ -60,8 +60,8 @@ CELERY_ANNOTATIONS = {
 # Score multiplier for user count
 BT_USER_WEIGHT = int(os.environ.get('BT_USER_WEIGHT', 100))
 
-# Score bonus added if gold is in the materials
-BT_GOLD_BONUS = int(os.environ.get('BT_GOLD_BONUS', 5000))
+# User bonus added if gold is in the materials
+BT_GOLD_BONUS = int(os.environ.get('BT_GOLD_BONUS', 50))
 
 # Number of low user count listing ids preserved when scrubbing scrubs
 BT_SCRUB_LIMIT = int(os.environ.get('BT_SCRUB_LIMIT', 5000))

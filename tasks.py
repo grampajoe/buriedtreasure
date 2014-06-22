@@ -112,8 +112,8 @@ def score_listing(listing):
     )
 
     score = (
-        listing['users'] * user_weight
-        + (gold_bonus if 'gold' in listing['materials'] else 0)
+        (listing['users'] + (gold_bonus if 'gold' in listing['materials'] else 0))
+        * user_weight
     ) / (
         age
         * float(listing['views'])
