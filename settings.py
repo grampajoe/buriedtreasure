@@ -71,3 +71,6 @@ BT_CHUNK_SIZE = int(os.environ.get('BT_CHUNK_SIZE', 50))
 
 # Number of listings to keep data for
 BT_LISTING_LIMIT = int(os.environ.get('BT_LISTING_LIMIT', 500))
+
+# The time in days after which age goes from detriment to benefit
+BT_AGE_PIVOT = int(os.environ.get('BT_AGE_PIVOT', 1000))

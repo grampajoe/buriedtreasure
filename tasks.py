@@ -103,6 +103,7 @@ def score_listing(listing):
     """Calculate and save a listing's score."""
     user_weight = app.config.get('BT_USER_WEIGHT')
     gold_bonus = app.config.get('BT_GOLD_BONUS')
+    age_pivot = app.config.get('BT_AGE_PIVOT')
 
     # Age is expressed in days
     age = (
@@ -114,9 +115,9 @@ def score_listing(listing):
     score = (
         (listing['users'] + (gold_bonus if 'gold' in listing['materials'] else 0))
         * user_weight
+        * abs(1 - (age / age_pivot))
     ) / (
-        age
-        * float(listing['views'])
+        float(listing['views'])
         * float(listing['quantity'])
         + 1
     )
