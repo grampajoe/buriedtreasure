@@ -101,6 +101,9 @@ def save_listing(listing):
 
 def score_listing(listing):
     """Calculate and save a listing's score."""
+    user_weight = app.config.get('BT_USER_WEIGHT')
+    gold_bonus = app.config.get('BT_GOLD_BONUS')
+
     # Age is expressed in days
     age = (
         time.time() - float(listing['original_creation_tsz'])
@@ -109,16 +112,14 @@ def score_listing(listing):
     )
 
     score = (
-        listing['users'] * 100
+        listing['users'] * user_weight
+        + (gold_bonus if 'gold' in listing['materials'] else 0)
     ) / (
         age
         * float(listing['views'])
         * float(listing['quantity'])
         + 1
     )
-
-    if 'gold' in listing['materials']:
-        score = score + 5000
 
     r.zadd('treasures', listing['listing_id'], score)
 
@@ -162,10 +163,12 @@ def fetch_listings():
 @celery.task
 def scrub_scrubs():
     """Randomly culls single-user lists."""
+    scrub_limit = app.config.get('BT_SCRUB_LIMIT')
+
     users_keys = r.keys('listings.*.users')
 
     # Preserve at least 5000, scrubbing half the remainder
-    scrub_count = max(len(users_keys) - 5000, 0)/2
+    scrub_count = max(len(users_keys) - scrub_limit, 0)/2
 
     for key in random.sample(users_keys, scrub_count):
         if r.scard(key) < 2:
@@ -190,8 +193,10 @@ def fetch_detail(*listing_ids):
 @celery.task
 def process_listings():
     """Process all listings."""
-    chunk_size = 50
-    listing_ids = r.zrevrange('treasures', 0, 499)
+    chunk_size = app.config.get('BT_CHUNK_SIZE', 50)
+    listing_limit = app.config.get('BT_LISTING_LIMIT', 500)
+
+    listing_ids = r.zrevrange('treasures', 0, listing_limit - 1)
 
     for i in xrange(0, len(listing_ids), chunk_size):
         fetch_detail.delay(
@@ -199,7 +204,7 @@ def process_listings():
         )
 
     # Purge the unworthy
-    unworthy_ids = r.zrange('treasures', 0, -501)
+    unworthy_ids = r.zrange('treasures', 0, -(listing_limit + 1))
 
     for listing_id in unworthy_ids:
         purge_data(listing_id)

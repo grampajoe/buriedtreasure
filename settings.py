@@ -50,6 +50,24 @@ CELERYBEAT_SCHEDULE = {
 
 CELERY_ANNOTATIONS = {
     'tasks.fetch_detail': {
-        'rate_limit': '10/m',
+        'rate_limit': os.environ.get('FETCH_DETAIL_RATE', '10/m'),
     }
 }
+
+# These Buried Treasure settings come from the environment, so you know they're
+# good for you.
+
+# Score multiplier for user count
+BT_USER_WEIGHT = int(os.environ.get('BT_USER_WEIGHT', 100))
+
+# Score bonus added if gold is in the materials
+BT_GOLD_BONUS = int(os.environ.get('BT_GOLD_BONUS', 5000))
+
+# Number of low user count listing ids preserved when scrubbing scrubs
+BT_SCRUB_LIMIT = int(os.environ.get('BT_SCRUB_LIMIT', 5000))
+
+# Number of listing records to get at a time
+BT_CHUNK_SIZE = int(os.environ.get('BT_CHUNK_SIZE', 50))
+
+# Number of listings to keep data for
+BT_LISTING_LIMIT = int(os.environ.get('BT_LISTING_LIMIT', 500))
