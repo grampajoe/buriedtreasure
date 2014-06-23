@@ -38,10 +38,6 @@ CELERYBEAT_SCHEDULE = {
         'task': 'tasks.fetch_listings',
         'schedule': timedelta(minutes=5),
     },
-    'process_listings': {
-        'task': 'tasks.process_listings',
-        'schedule': timedelta(minutes=2, seconds=30),
-    },
     'scrub_scrubs': {
         'task': 'tasks.scrub_scrubs',
         'schedule': timedelta(minutes=1),
@@ -50,7 +46,7 @@ CELERYBEAT_SCHEDULE = {
 
 CELERY_ANNOTATIONS = {
     'tasks.fetch_detail': {
-        'rate_limit': os.environ.get('FETCH_DETAIL_RATE', '10/m'),
+        'rate_limit': os.environ.get('FETCH_DETAIL_RATE', '5/m'),
     }
 }
 

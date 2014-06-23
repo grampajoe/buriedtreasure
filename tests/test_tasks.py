@@ -96,6 +96,7 @@ def store_fake_data(listing_id, score=9000):
     r.zadd('treasures', listing_id, score)
 
 
+@patch('tasks.process_listings')
 class TestFetchListings(object):
     """Tests for the fetch_listings task."""
     def setup_method(self, method):
@@ -111,16 +112,16 @@ class TestFetchListings(object):
         r.flushdb()
 
     @patch('tasks.api_call')
-    def test_get_treasuries(self, api_call):
+    def test_get_treasuries(self, api_call, process_listings):
         """Should get a list of treasuries with listing data."""
         api_call.return_value = {
             'results': [
                 {
-                    'user_id': i,
+                    'user_id': str(i),
                     'listings': [
                         {
                             'data': {
-                                'listing_id': j,
+                                'listing_id': str(j),
                             },
                         }
                         for j in range(10)
@@ -139,38 +140,30 @@ class TestFetchListings(object):
         )
         assert result == api_call.return_value['results']
 
-    def test_fetch_listings_single_user(self):
-        """Should store user IDs but not scores for items with one user."""
+    def test_fetch_listings_single_user(self, process_listings):
+        """Should store user IDs but not fetch items with one user."""
         fetch_listings()
 
-        assert r.zscore('treasures', 1) is None
         assert r.smembers('listings.1.users') == set(['1'])
+        assert '1' not in process_listings.call_args[0]
 
-    def test_fetch_listings_multiple_users(self):
-        """Should store user IDs and scores for items with more than one user."""
+    def test_fetch_listings_multiple_users(self, process_listings):
+        """Should store user IDs and fetch items with more than one user."""
         fetch_listings()
 
-        assert r.zscore('treasures', 2) == 0
         assert r.smembers('listings.2.users') == set(['1', '2'])
+        assert '2' in process_listings.call_args[0]
 
-    def test_fetch_listings_single_new_user(self):
-        """Should store a score for existing items with a single new user."""
+    def test_fetch_listings_single_new_user(self, process_listings):
+        """Should fetch existing items with a single new user."""
         r.sadd('listings.1.users', '9')
 
         fetch_listings()
 
-        assert r.zscore('treasures', 1) == 0
         assert r.smembers('listings.1.users') == set(['1', '9'])
+        assert '1' in process_listings.call_args[0]
 
-    def test_fetch_listings_existing_score(self):
-        """Should not overwrite existing scores."""
-        r.zadd('treasures', '1', 9000)
-
-        fetch_listings()
-
-        assert r.zscore('treasures', '1') == 9000
-
-    def test_fetch_listings_existing_users(self):
+    def test_fetch_listings_existing_users(self, process_listings):
         """Should add to existing sets of users."""
         r.sadd('listings.1.users', '9', '10', 'three')
 
@@ -178,13 +171,14 @@ class TestFetchListings(object):
 
         assert r.smembers('listings.1.users') == set(['9', '10', 'three', '1'])
 
-    def test_fetch_listings_duplicate_user_no_score(self):
-        """Should not add a score if only one unique user ID is found."""
+    def test_fetch_listings_duplicate_user_no_fetch(self, process_listings):
+        """Should not fetch the listing if only one unique user ID is found."""
         r.sadd('listings.1.users', '1')
 
         fetch_listings()
 
         assert r.smembers('listings.1.users') == set(['1'])
+        assert '1' not in process_listings.call_args[0]
 
 
 class TestScrubScrubs():
@@ -496,7 +490,7 @@ class TestScoreListing(object):
 
 
 class TestProcessListings(object):
-    """Tests for the process_listings task."""
+    """Tests for the process_listings method."""
     def setup_method(self, method):
         self.fetch_detail_patch = patch('tasks.fetch_detail')
         self.fetch_detail = self.fetch_detail_patch.start()
@@ -510,25 +504,10 @@ class TestProcessListings(object):
 
     def test_processes_listings(self):
         """Should call fetch_detail and score_listing on all listings."""
-        for i in range(1000):
-            r.zadd('treasures', i, i)
+        process_listings(*xrange(500))
 
-        process_listings()
-
-        assert self.fetch_detail.delay.call_count == 10
+        assert self.fetch_detail.delay.call_count == 10  # chunks of 50
 
         for mock_call in self.fetch_detail.delay.mock_calls:
             _, args, _ = mock_call
             assert len(args) == 50
-
-        assert r.zcard('treasures') == 500
-
-    def test_purges_old_data(self):
-        """Should delete data for purged listings."""
-        for i in range(1000):
-            store_fake_data(i, score=i)
-
-        process_listings()
-
-        for i in range(0, 500):
-            assert_does_not_exist(i)

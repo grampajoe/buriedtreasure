@@ -125,6 +125,16 @@ def score_listing(listing):
     r.zadd('treasures', listing['listing_id'], score)
 
 
+def process_listings(*listing_ids):
+    """Schedule processing for chunks of listings."""
+    chunk_size = app.config.get('BT_CHUNK_SIZE', 50)
+
+    for i in xrange(0, len(listing_ids), chunk_size):
+        fetch_detail.delay(
+            *listing_ids[i: i + chunk_size]
+        )
+
+
 @celery.task
 def fetch_listings():
     """Fetches and stores listing scores and user ids."""
@@ -144,21 +154,24 @@ def fetch_listings():
 
     update_pipe = r.pipeline()
 
+    process_ids = []
     for listing_id, existing_users, score in combined_data:
         users = user_map[listing_id]
         all_users = users.union(existing_users)
 
-        if not score and len(all_users) > 1:
+        if len(all_users) > 1:
             logger.debug(
                 'Found %s users for %s: %r' %
                 (len(all_users), listing_id, all_users),
             )
 
-            update_pipe.zadd('treasures', listing_id, 0)
+            process_ids.append(listing_id)
 
         update_pipe.sadd('listings.%s.users' % listing_id, *users)
 
     update_pipe.execute()
+
+    process_listings(*process_ids)
 
 
 @celery.task
@@ -189,23 +202,3 @@ def fetch_detail(*listing_ids):
             score_listing(listing)
         else:
             purge_data(listing['listing_id'])
-
-
-@celery.task
-def process_listings():
-    """Process all listings."""
-    chunk_size = app.config.get('BT_CHUNK_SIZE', 50)
-    listing_limit = app.config.get('BT_LISTING_LIMIT', 500)
-
-    listing_ids = r.zrevrange('treasures', 0, listing_limit - 1)
-
-    for i in xrange(0, len(listing_ids), chunk_size):
-        fetch_detail.delay(
-            *listing_ids[i: i + chunk_size]
-        )
-
-    # Purge the unworthy
-    unworthy_ids = r.zrange('treasures', 0, -(listing_limit + 1))
-
-    for listing_id in unworthy_ids:
-        purge_data(listing_id)
