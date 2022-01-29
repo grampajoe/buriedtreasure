@@ -504,7 +504,7 @@ class TestProcessListings(object):
 
     def test_processes_listings(self):
         """Should call fetch_detail and score_listing on all listings."""
-        process_listings(*xrange(500))
+        process_listings(*range(500))
 
         assert self.fetch_detail.delay.call_count == 10  # chunks of 50
 
