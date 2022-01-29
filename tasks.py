@@ -129,7 +129,7 @@ def process_listings(*listing_ids):
     """Schedule processing for chunks of listings."""
     chunk_size = app.config.get('BT_CHUNK_SIZE', 50)
 
-    for i in xrange(0, len(listing_ids), chunk_size):
+    for i in range(0, len(listing_ids), chunk_size):
         fetch_detail.delay(
             *listing_ids[i: i + chunk_size]
         )
