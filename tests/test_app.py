@@ -15,7 +15,7 @@ class TestIndex(object):
         self.client = app.test_client()
 
         for i in range(1000):
-            r.zadd('treasures', i, i)
+            r.zadd('treasures', {i: i})
             r.set('listings.%s.data' % i, json.dumps({
                 'listing_id': i,
                 'quantity': i,
