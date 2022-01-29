@@ -182,7 +182,7 @@ def scrub_scrubs():
     users_keys = r.keys('listings.*.users')
 
     # Preserve at least 5000, scrubbing half the remainder
-    scrub_count = max(len(users_keys) - scrub_limit, 0)/2
+    scrub_count = int(max(len(users_keys) - scrub_limit, 0)/2)
 
     for key in random.sample(users_keys, scrub_count):
         if r.scard(key) < 2:
