@@ -186,7 +186,7 @@ def scrub_scrubs():
 
     for key in random.sample(users_keys, scrub_count):
         if r.scard(key) < 2:
-            _, listing_id, _ = key.split('.')
+            _, listing_id, _ = key.decode('utf-8').split('.')
             purge_data(listing_id)
 
 
