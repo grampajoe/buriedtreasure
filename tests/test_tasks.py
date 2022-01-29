@@ -1,6 +1,6 @@
 import json
 import time
-from mock import patch, call, Mock
+from unittest.mock import patch, call, Mock
 
 from app import r
 
