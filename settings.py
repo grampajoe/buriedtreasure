@@ -1,5 +1,5 @@
 import os
-import urlparse
+from urllib.parse import urlparse
 from datetime import timedelta
 
 from kombu import Queue
@@ -12,7 +12,7 @@ ETSY_SERVER = 'http://etsy.com/'
 ETSY_API_KEY = os.environ.get('ETSY_API_KEY')
 ETSY_API_SECRET = os.environ.get('ETSY_API_SECRET')
 
-REDIS_CONFIG = urlparse.urlparse(os.environ.get('REDISCLOUD_URL'))
+REDIS_CONFIG = urlparse(os.environ.get('REDISCLOUD_URL'))
 
 BROKER_URL = os.environ.get('RABBITMQ_BIGWIG_URL')
 
