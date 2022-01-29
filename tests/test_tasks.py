@@ -144,14 +144,14 @@ class TestFetchListings(object):
         """Should store user IDs but not fetch items with one user."""
         fetch_listings()
 
-        assert r.smembers('listings.1.users') == set(['1'])
+        assert r.smembers('listings.1.users') == set([b'1'])
         assert '1' not in process_listings.call_args[0]
 
     def test_fetch_listings_multiple_users(self, process_listings):
         """Should store user IDs and fetch items with more than one user."""
         fetch_listings()
 
-        assert r.smembers('listings.2.users') == set(['1', '2'])
+        assert r.smembers('listings.2.users') == set([b'1', b'2'])
         assert '2' in process_listings.call_args[0]
 
     def test_fetch_listings_single_new_user(self, process_listings):
@@ -160,7 +160,7 @@ class TestFetchListings(object):
 
         fetch_listings()
 
-        assert r.smembers('listings.1.users') == set(['1', '9'])
+        assert r.smembers('listings.1.users') == set([b'1', b'9'])
         assert '1' in process_listings.call_args[0]
 
     def test_fetch_listings_existing_users(self, process_listings):
@@ -169,7 +169,7 @@ class TestFetchListings(object):
 
         fetch_listings()
 
-        assert r.smembers('listings.1.users') == set(['9', '10', 'three', '1'])
+        assert r.smembers('listings.1.users') == set([b'9', b'10', b'three', b'1'])
 
     def test_fetch_listings_duplicate_user_no_fetch(self, process_listings):
         """Should not fetch the listing if only one unique user ID is found."""
@@ -177,7 +177,7 @@ class TestFetchListings(object):
 
         fetch_listings()
 
-        assert r.smembers('listings.1.users') == set(['1'])
+        assert r.smembers('listings.1.users') == set([b'1'])
         assert '1' not in process_listings.call_args[0]
 
 
