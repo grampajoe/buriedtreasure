@@ -10,4 +10,4 @@ requests==2.3.0
 gunicorn==18.0
 eventlet==0.33.0
 newrelic==2.20.0.17
-redis==2.10.1
+redis==4.1.2
