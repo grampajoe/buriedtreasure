@@ -122,7 +122,7 @@ def score_listing(listing):
         + 1
     )
 
-    r.zadd('treasures', listing['listing_id'], score)
+    r.zadd('treasures', {listing['listing_id']: score})
 
 
 def process_listings(*listing_ids):
