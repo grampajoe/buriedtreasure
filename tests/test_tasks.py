@@ -93,7 +93,7 @@ def store_fake_data(listing_id, score=9000):
     """Stores fake listing data for listing_id."""
     r.set('listings.%s.data' % listing_id, '{"hello": "there"}')
     r.sadd('listings.%s.users' % listing_id, '999')
-    r.zadd('treasures', listing_id, score)
+    r.zadd('treasures', {listing_id: score})
 
 
 @patch('tasks.process_listings')
