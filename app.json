@@ -11,6 +11,16 @@
       "value": 1
     }
   },
+  "addons": [
+    {
+      "plan": "rediscloud:25",
+      "as": "REDISCLOUD"
+    },
+    {
+      "plan": "cloudamqp:lemur",
+      "as": "CLOUDAMQP"
+    }
+  ],
   "environments": {
     "review": {
       "env": {
