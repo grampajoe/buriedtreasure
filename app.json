@@ -9,6 +9,10 @@
     "CELERY_WORKERS": {
       "description": "Number of background workers to run.",
       "value": 1
+    },
+    "SECRET_KEY": {
+      "description": "Secret key for encryption of things.",
+      "generator": "secret"
     }
   },
   "addons": [
@@ -20,19 +24,5 @@
       "plan": "cloudamqp:lemur",
       "as": "CLOUDAMQP"
     }
-  ],
-  "environments": {
-    "review": {
-      "env": {
-        "WEB_WORKERS": {
-          "description": "Number of web workers to run.",
-          "value": 1
-        },
-        "CELERY_WORKERS": {
-          "description": "Number of background workers to run.",
-          "value": 1
-        }
-      }
-    }
-  }
+  ]
 }
