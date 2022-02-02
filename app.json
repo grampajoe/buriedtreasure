@@ -10,5 +10,19 @@
       "description": "Number of background workers to run.",
       "value": 1
     }
+  },
+  "environments": {
+    "review": {
+      "env": {
+        "WEB_WORKERS": {
+          "description": "Number of web workers to run.",
+          "value": 1
+        },
+        "CELERY_WORKERS": {
+          "description": "Number of background workers to run.",
+          "value": 1
+        }
+      }
+    }
   }
 }
