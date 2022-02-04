@@ -142,14 +142,14 @@ class TestFetchListings(object):
 
     def test_fetch_listings_single_user(self, process_listings):
         """Should store user IDs but not fetch items with one user."""
-        fetch_listings()
+        fetch_listings.apply()
 
         assert r.smembers('listings.1.users') == set([b'1'])
         assert '1' not in process_listings.call_args[0]
 
     def test_fetch_listings_multiple_users(self, process_listings):
         """Should store user IDs and fetch items with more than one user."""
-        fetch_listings()
+        fetch_listings.apply()
 
         assert r.smembers('listings.2.users') == set([b'1', b'2'])
         assert '2' in process_listings.call_args[0]
@@ -158,7 +158,7 @@ class TestFetchListings(object):
         """Should fetch existing items with a single new user."""
         r.sadd('listings.1.users', '9')
 
-        fetch_listings()
+        fetch_listings.apply()
 
         assert r.smembers('listings.1.users') == set([b'1', b'9'])
         assert '1' in process_listings.call_args[0]
@@ -167,7 +167,7 @@ class TestFetchListings(object):
         """Should add to existing sets of users."""
         r.sadd('listings.1.users', '9', '10', 'three')
 
-        fetch_listings()
+        fetch_listings.apply()
 
         assert r.smembers('listings.1.users') == set([b'9', b'10', b'three', b'1'])
 
@@ -175,7 +175,7 @@ class TestFetchListings(object):
         """Should not fetch the listing if only one unique user ID is found."""
         r.sadd('listings.1.users', '1')
 
-        fetch_listings()
+        fetch_listings.apply()
 
         assert r.smembers('listings.1.users') == set([b'1'])
         assert '1' not in process_listings.call_args[0]
@@ -194,7 +194,7 @@ class TestScrubScrubs():
         for i in range(50, 6000):
             r.sadd('listings.%s.users' % i, '1')
 
-        scrub_scrubs()
+        scrub_scrubs.apply()
 
         # All of the 2 or more lists should be there
         for i in range(50):
@@ -245,7 +245,7 @@ class TestFetchDetail(object):
     @patch('tasks.score_listing')
     def test_fetch_detail(self, score_listing):
         """Should get and store listing data."""
-        result = fetch_detail(*self.listing_ids)
+        result = fetch_detail.apply(self.listing_ids)
 
         for listing in listings():
             data = json.loads(r.get('listings.%s.data' % listing['listing_id']))
@@ -256,7 +256,7 @@ class TestFetchDetail(object):
     @patch('tasks.score_listing')
     def test_scores_things(self, score_listing):
         """Should score each fetched listing."""
-        fetch_detail(*self.listing_ids)
+        fetch_detail.apply(self.listing_ids)
 
         for listing in listings():
             listing['users'] = 3
@@ -288,7 +288,7 @@ class TestFetchDetailDestruction(object):
             },
         ]
 
-        fetch_detail.apply('1')
+        fetch_detail.apply(args=['1'])
 
         assert_does_not_exist('1')
         assert score_listing.called == False
@@ -306,7 +306,7 @@ class TestFetchDetailDestruction(object):
             },
         ]
 
-        fetch_detail.apply('2')
+        fetch_detail.apply(args=['2'])
 
         assert_does_not_exist('2')
         assert score_listing.called == False
@@ -324,7 +324,7 @@ class TestFetchDetailDestruction(object):
             },
         ]
 
-        fetch_detail.apply('3')
+        fetch_detail.apply(args=['3'])
 
         assert_does_not_exist('3')
         assert score_listing.called == False
@@ -343,7 +343,7 @@ class TestFetchDetailDestruction(object):
 
         store_fake_data('1')
 
-        fetch_detail.apply('1')
+        fetch_detail.apply(args=['1'])
 
         assert_does_not_exist('1')
 
@@ -361,7 +361,7 @@ class TestFetchDetailDestruction(object):
 
         store_fake_data('2')
 
-        fetch_detail.apply('2')
+        fetch_detail.apply(args=['2'])
 
         assert_does_not_exist('2')
 
@@ -379,7 +379,7 @@ class TestFetchDetailDestruction(object):
 
         store_fake_data('3')
 
-        fetch_detail.apply('3')
+        fetch_detail.apply(args=['3'])
 
         assert_does_not_exist('3')
 
