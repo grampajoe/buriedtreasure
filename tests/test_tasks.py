@@ -288,7 +288,7 @@ class TestFetchDetailDestruction(object):
             },
         ]
 
-        fetch_detail('1')
+        fetch_detail.apply('1')
 
         assert_does_not_exist('1')
         assert score_listing.called == False
@@ -306,7 +306,7 @@ class TestFetchDetailDestruction(object):
             },
         ]
 
-        fetch_detail('2')
+        fetch_detail.apply('2')
 
         assert_does_not_exist('2')
         assert score_listing.called == False
@@ -324,7 +324,7 @@ class TestFetchDetailDestruction(object):
             },
         ]
 
-        fetch_detail('3')
+        fetch_detail.apply('3')
 
         assert_does_not_exist('3')
         assert score_listing.called == False
@@ -343,7 +343,7 @@ class TestFetchDetailDestruction(object):
 
         store_fake_data('1')
 
-        fetch_detail('1')
+        fetch_detail.apply('1')
 
         assert_does_not_exist('1')
 
@@ -361,7 +361,7 @@ class TestFetchDetailDestruction(object):
 
         store_fake_data('2')
 
-        fetch_detail('2')
+        fetch_detail.apply('2')
 
         assert_does_not_exist('2')
 
@@ -379,7 +379,7 @@ class TestFetchDetailDestruction(object):
 
         store_fake_data('3')
 
-        fetch_detail('3')
+        fetch_detail.apply('3')
 
         assert_does_not_exist('3')
 
