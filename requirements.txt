@@ -5,7 +5,7 @@ Flask-OAuth==0.12
 oauth2==1.9.0.post1
 httplib2==0.7.4
 celery==5.2.3
-honcho==0.5.0
+honcho==1.1.0
 requests==2.27.1
 eventlet==0.33.0
 redis==4.1.2
