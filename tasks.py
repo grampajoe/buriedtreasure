@@ -154,7 +154,7 @@ def fetch_listings():
     process_ids = []
     for listing_id, existing_users, score in combined_data:
         users = user_map[listing_id]
-        all_users = users.union(existing_users)
+        all_users = users.union([uid.decode('utf-8') for uid in existing_users])
 
         if len(all_users) > 1:
             logger.debug(
