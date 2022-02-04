@@ -15,6 +15,12 @@ ETSY_API_SECRET = os.environ.get('ETSY_API_SECRET')
 REDIS_CONFIG = urlparse(os.environ.get('REDISCLOUD_URL'))
 
 broker_url = os.environ.get('CLOUDAMQP_URL')
+broker_use_ssl = False
+
+# Handle ampqs://
+if broker_url.startswith('amqps://'):
+    broker_url = broker_url.replace('amqps://', 'amqp://', 1)
+    broker_use_ssl = True
 
 task_default_queue = 'default'
 task_default_exchange = 'tasks'
