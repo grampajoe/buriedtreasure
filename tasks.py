@@ -6,11 +6,12 @@ import requests
 from celery import Celery
 from celery.utils.log import get_task_logger
 
+import celeryconfig
 from app import app, r
 
 
 celery = Celery(__name__)
-celery.config_from_object('celeryconfig')
+celery.config_from_object(celeryconfig)
 
 logger = get_task_logger(__name__)
 

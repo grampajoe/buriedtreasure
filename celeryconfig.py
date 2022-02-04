@@ -8,7 +8,7 @@ broker_url = os.environ.get('CLOUDAMQP_URL')
 broker_use_ssl = False
 
 # Handle ampqs://
-if broker_url.startswith('amqps://'):
+if broker_url is not None and broker_url.startswith('amqps://'):
     broker_url = broker_url.replace('amqps://', 'amqp://', 1)
     broker_use_ssl = True
 
