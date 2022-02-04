@@ -1,6 +1,8 @@
 from flask import Flask, render_template
 import redis
 import json
+import os
+
 
 app = Flask(__name__)
 
@@ -19,19 +21,26 @@ def get_redis():
 r = get_redis()
 
 
-@app.route('/')
-def index():
+def get_treasures():
     treasure_ids = r.zrevrange('treasures', 0, 99)
-    treasure_keys = map(lambda s: 'listings.'+str(s), treasure_ids)
+    treasure_keys = map(
+        lambda s: 'listings.' + s.decode('utf-8') + '.data',
+        treasure_ids,
+    )
 
     pipe = r.pipeline()
     for treasure_key in treasure_keys:
-        pipe.get(treasure_key+'.data')
+        pipe.get(treasure_key)
 
-    treasures = [
+    return [
         json.loads(data) for data in pipe.execute()
         if data is not None
     ]
+
+
+@app.route('/')
+def index():
+    treasures = get_treasures()
 
     return render_template('index.html', treasures=treasures, sort='value')
 
