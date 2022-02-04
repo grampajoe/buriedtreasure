@@ -1,4 +1,4 @@
 web: python app.py
-default_worker: celery worker --app=tasks:celery -l debug --purge -Q default
-fetch_detail_worker: celery worker --app=tasks:celery -l debug --purge -Q fetch_detail
-beat: celery beat --app=tasks:celery -l debug
+default_worker: celery --app=tasks:celery worker -l debug --purge -Q default -n default@%h
+fetch_detail_worker: celery --app=tasks:celery worker -l debug --purge -Q fetch_detail -n feetch_detail@%h
+beat: celery --app=tasks:celery beat -l debug

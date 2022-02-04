@@ -1,13 +1,16 @@
-Flask==0.9
-Werkzeug==0.8.3
-Jinja2==2.6
-Flask-OAuth==0.11
-oauth2==1.5.211
+Flask==2.0.2
+Werkzeug==2.0.2
+Jinja2==3.0.3
+Flask-OAuth==0.12
+oauth2==1.9.0.post1
 httplib2==0.7.4
-celery==3.1.12
-honcho==0.5.0
-requests==2.3.0
-gunicorn==18.0
-eventlet==0.14.0
-newrelic==2.20.0.17
-redis==2.10.1
+celery==5.2.3
+honcho==1.1.0
+requests==2.27.1
+eventlet==0.33.0
+redis==4.1.2
+
+# Workaround for eventlet issue until gunicorn releases the fix
+# https://github.com/benoitc/gunicorn/pull/2581
+#gunicorn==20.1.0
+https://github.com/benoitc/gunicorn/archive/e5a97150c95d68551a3cd3a3ecf356dcd20b667c.zip#egg=gunicorn==20.1.0

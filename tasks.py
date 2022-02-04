@@ -2,16 +2,16 @@ import json
 import random
 import time
 
-import newrelic.agent
 import requests
 from celery import Celery
 from celery.utils.log import get_task_logger
 
+import celeryconfig
 from app import app, r
 
-celery = Celery(__name__)
 
-celery.config_from_object(app.config)
+celery = Celery(__name__)
+celery.config_from_object(celeryconfig)
 
 logger = get_task_logger(__name__)
 
@@ -21,14 +21,11 @@ def api_call(endpoint, **params):
     url = app.config['API_SERVER'] + endpoint
     response = requests.get(url, params=params)
 
-    # Send rate limit metrics to NewRelic
+    # Log rate limit
     rate_limit = response.headers.get('X-RateLimit-Limit')
     rate_limit_remaining = response.headers.get('X-RateLimit-Remaining')
     if rate_limit is not None:
-        newrelic.agent.record_custom_metrics([
-            ('Custom/Etsy/RateLimit', int(rate_limit)),
-            ('Custom/Etsy/RateLimitRemaining', int(rate_limit_remaining)),
-        ])
+        app.logger.info('Etsy rate limit: {}/{}'.format(rate_limit_remaining, rate_limit))
 
     try:
         return response.json()
@@ -122,14 +119,14 @@ def score_listing(listing):
         + 1
     )
 
-    r.zadd('treasures', listing['listing_id'], score)
+    r.zadd('treasures', {listing['listing_id']: score})
 
 
 def process_listings(*listing_ids):
     """Schedule processing for chunks of listings."""
     chunk_size = app.config.get('BT_CHUNK_SIZE', 50)
 
-    for i in xrange(0, len(listing_ids), chunk_size):
+    for i in range(0, len(listing_ids), chunk_size):
         fetch_detail.delay(
             *listing_ids[i: i + chunk_size]
         )
@@ -157,7 +154,7 @@ def fetch_listings():
     process_ids = []
     for listing_id, existing_users, score in combined_data:
         users = user_map[listing_id]
-        all_users = users.union(existing_users)
+        all_users = users.union([uid.decode('utf-8') for uid in existing_users])
 
         if len(all_users) > 1:
             logger.debug(
@@ -182,11 +179,11 @@ def scrub_scrubs():
     users_keys = r.keys('listings.*.users')
 
     # Preserve at least 5000, scrubbing half the remainder
-    scrub_count = max(len(users_keys) - scrub_limit, 0)/2
+    scrub_count = int(max(len(users_keys) - scrub_limit, 0)/2)
 
     for key in random.sample(users_keys, scrub_count):
         if r.scard(key) < 2:
-            _, listing_id, _ = key.split('.')
+            _, listing_id, _ = key.decode('utf-8').split('.')
             purge_data(listing_id)
 
 

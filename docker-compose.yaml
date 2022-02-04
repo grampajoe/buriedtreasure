@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+  web:
+    build: .
+    environment:
+      REDISCLOUD_URL: 'redis://redis:6379'
+      PORT: '3000'
+    command: honcho start -f Procfile.web web
+    ports:
+      - '3000'
+    depends_on:
+      - redis
+
+  default_worker:
+    build: .
+    environment:
+      REDISCLOUD_URL: 'redis://redis:6379'
+      CLOUDAMQP_URL: 'amqp://amqp:5672'
+    command: honcho start -f Procfile.web default_worker
+    depends_on:
+      - redis
+      - amqp
+
+  fetch_detail_worker:
+    build: .
+    environment:
+      REDISCLOUD_URL: 'redis://redis:6379'
+      CLOUDAMQP_URL: 'amqp://amqp:5672'
+    command: honcho start -f Procfile.web fetch_detail_worker
+    depends_on:
+      - redis
+      - amqp
+
+  beat:
+    build: .
+    environment:
+      REDISCLOUD_URL: 'redis://redis:6379'
+      CLOUDAMQP_URL: 'amqp://amqp:5672'
+    command: honcho start -f Procfile.web beat
+    depends_on:
+      - amqp
+
+  redis:
+    image: redis
+
+  amqp:
+    image: rabbitmq

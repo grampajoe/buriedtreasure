@@ -15,7 +15,7 @@ class TestIndex(object):
         self.client = app.test_client()
 
         for i in range(1000):
-            r.zadd('treasures', i, i)
+            r.zadd('treasures', {i: i})
             r.set('listings.%s.data' % i, json.dumps({
                 'listing_id': i,
                 'quantity': i,
@@ -42,7 +42,7 @@ class TestIndex(object):
         """Should display treasures!"""
         response = self.client.get('/')
 
-        document = BeautifulSoup(response.data)
+        document = BeautifulSoup(response.data, features="html.parser")
 
         for i in range(999, 899, -1):
             assert document.find(id='listing_%s' % i) is not None
@@ -51,6 +51,6 @@ class TestIndex(object):
         """Should display up to 100 treasures."""
         response = self.client.get('/')
 
-        document = BeautifulSoup(response.data)
+        document = BeautifulSoup(response.data, features="html.parser")
 
         assert len(document.find(id='treasures').find_all('li')) == 100

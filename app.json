@@ -1,0 +1,28 @@
+{
+  "name": "buried-treasure",
+  "description": "It's what pirates crave!",
+  "env": {
+    "WEB_WORKERS": {
+      "description": "Number of web workers to run.",
+      "value": 2
+    },
+    "CELERY_WORKERS": {
+      "description": "Number of background workers to run.",
+      "value": 1
+    },
+    "SECRET_KEY": {
+      "description": "Secret key for encryption of things.",
+      "generator": "secret"
+    }
+  },
+  "addons": [
+    {
+      "plan": "rediscloud:25",
+      "as": "REDISCLOUD"
+    },
+    {
+      "plan": "cloudamqp:lemur",
+      "as": "CLOUDAMQP"
+    }
+  ]
+}
