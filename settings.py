@@ -14,26 +14,26 @@ ETSY_API_SECRET = os.environ.get('ETSY_API_SECRET')
 
 REDIS_CONFIG = urlparse(os.environ.get('REDISCLOUD_URL'))
 
-BROKER_URL = os.environ.get('RABBITMQ_BIGWIG_URL')
+broker_url = os.environ.get('RABBITMQ_BIGWIG_URL')
 
-CELERY_DEFAULT_QUEUE = 'default'
-CELERY_DEFAULT_EXCHANGE = 'tasks'
-CELERY_DEFAULT_EXCHANGE_TYPE = 'topic'
-CELERY_DEFAULT_ROUTING_KEY = 'default'
+task_default_queue = 'default'
+task_default_exchange = 'tasks'
+task_default_exchange_type = 'topic'
+task_default_routing_key = 'default'
 
-CELERY_QUEUES = (
+task_queues = (
     Queue('default', routing_key='default'),
     Queue('fetch_detail', routing_key='fetch_detail'),
 )
 
-CELERY_ROUTES = {
+task_routes = {
     'tasks.fetch_detail': {
         'queue': 'fetch_detail',
         'routing_key': 'fetch_detail',
     },
 }
 
-CELERYBEAT_SCHEDULE = {
+beat_schedule = {
     'fetch_listings': {
         'task': 'tasks.fetch_listings',
         'schedule': timedelta(minutes=5),
@@ -44,7 +44,7 @@ CELERYBEAT_SCHEDULE = {
     },
 }
 
-CELERY_ANNOTATIONS = {
+task_annotations = {
     'tasks.fetch_detail': {
         'rate_limit': os.environ.get('FETCH_DETAIL_RATE', '5/m'),
     }
