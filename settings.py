@@ -14,7 +14,7 @@ ETSY_API_SECRET = os.environ.get('ETSY_API_SECRET')
 
 REDIS_CONFIG = urlparse(os.environ.get('REDISCLOUD_URL'))
 
-broker_url = os.environ.get('RABBITMQ_BIGWIG_URL')
+broker_url = os.environ.get('CLOUDAMQP_URL')
 
 task_default_queue = 'default'
 task_default_exchange = 'tasks'
